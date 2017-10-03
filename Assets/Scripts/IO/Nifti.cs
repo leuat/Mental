@@ -13,6 +13,7 @@ public class Nifti
 {
     public struct NiftiHeader
     {
+
         public int sizeof_hdr;    /*!< MUST be 348           */  /* int sizeof_hdr;      */
         //[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 8)]
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10)]
@@ -54,30 +55,30 @@ public class Nifti
 
         /*--- was data_history substruct ---*/
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 80)]
-        char[] descrip; /*!< any text you like.    */  /* char descrip[80];    */
+        public char[] descrip; /*!< any text you like.    */  /* char descrip[80];    */
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 24)]
-        char[] aux_file;  /*!< auxiliary filename.   */  /* char aux_file[24];   */
+        public char[] aux_file;  /*!< auxiliary filename.   */  /* char aux_file[24];   */
 
-        short qform_code;   /*!< NIFTI_XFORM_* code.   */  /*-- all ANALYZE 7.5 ---*/
-        short sform_code;   /*!< NIFTI_XFORM_* code.   */  /*   fields below here  */
-                                                           /*   are replaced       */
-        float quatern_b;    /*!< Quaternion b param.   */
-        float quatern_c;    /*!< Quaternion c param.   */
-        float quatern_d;    /*!< Quaternion d param.   */
-        float qoffset_x;    /*!< Quaternion x shift.   */
-        float qoffset_y;    /*!< Quaternion y shift.   */
-        float qoffset_z;    /*!< Quaternion z shift.   */
+        public short qform_code;   /*!< NIFTI_XFORM_* code.   */  /*-- all ANALYZE 7.5 ---*/
+        public short sform_code;   /*!< NIFTI_XFORM_* code.   */  /*   fields below here  */
+                                                                  /*   are replaced       */
+        public float quatern_b;    /*!< Quaternion b param.   */
+        public float quatern_c;    /*!< Quaternion c param.   */
+        public float quatern_d;    /*!< Quaternion d param.   */
+        public float qoffset_x;    /*!< Quaternion x shift.   */
+        public float qoffset_y;    /*!< Quaternion y shift.   */
+        public float qoffset_z;    /*!< Quaternion z shift.   */
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-        float[] srow_x;    /*!< 1st row affine transform.   */
+        public float[] srow_x;    /*!< 1st row affine transform.   */
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-        float[] srow_y;    /*!< 2nd row affine transform.   */
+        public float[] srow_y;    /*!< 2nd row affine transform.   */
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-        float[] srow_z;    /*!< 3rd row affine transform.   */
+        public float[] srow_z;    /*!< 3rd row affine transform.   */
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
 
-        char[] intent_name;/*!< 'name' or meaning of data.  */
+        public char[] intent_name;/*!< 'name' or meaning of data.  */
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
         public char[] magic;      /*!< MUST be "ni1\0" or "n+1\0". */
 
@@ -95,6 +96,7 @@ public class Nifti
             }
         }*/
 
+    public int DATATYPE = 3;
 
     public static NiftiHeader HeaderFromStream(FileStream fs)
     {
@@ -108,8 +110,9 @@ public class Nifti
 
     NiftiHeader header;
 
-    public void Load(string filename)
+    public void Load(string filename, int dataType)
     {
+        DATATYPE = dataType;
         if (!File.Exists(filename))
         {
             Debug.Log("Cannot find file: " + filename);
@@ -118,10 +121,14 @@ public class Nifti
         FileStream fs = File.Open(filename, FileMode.Open);
         header = Nifti.HeaderFromStream(fs);
 
+        for (int i = 0; i < 4; i++)
+            Debug.Log("N" + i + " : " + header.dim[i]);
+        
+        Debug.Log("bitpix:" + header.pixdim);
+        Debug.Log("Datatype: " + header.datatype);
         Allocate();
-        fs.Read(rawData, 0, (int)(size.x*size.y*size.z*3));
-                
-//        TestBall();
+        Debug.Log("File size should be " + (DATATYPE * size.x * size.y * size.z) / 1024 + " mb");
+        fs.Read(rawData, 0, (int)(size.x*size.y*size.z*DATATYPE));
 
     }
 
@@ -160,7 +167,7 @@ public class Nifti
         Vector3 newScale = new Vector3(size.x / resizeScale.x, size.y / resizeScale.y, size.z / resizeScale.z);
 
         VolumetricTexture vt = new VolumetricTexture(newScale);
-        vt.fromByteArray(rawData, resizeScale, size);
+        vt.fromByteArray(rawData, resizeScale, size, DATATYPE);
 /*        VolumetricTexture vt = new VolumetricTexture(size);
         vt.fromByteArray(rawData);*/
         return vt;
@@ -174,7 +181,7 @@ public class Nifti
         size.z = header.dim[2];
 
         //        data = new Color[(int)(size.x*size.y*size.z)];
-        rawData = new byte[(int)(size.x * size.y * size.z * 3)];
+        rawData = new byte[(int)(size.x * size.y * size.z * DATATYPE)];
     }
 
     void Fill()
@@ -182,9 +189,9 @@ public class Nifti
 
     }
 
-    public Nifti(string filename)
+    public Nifti(string filename, int dataType)
     {
-        Load(filename);
+        Load(filename, dataType);
     }
 
     public Vector3 size = new Vector3(1, 1, 1);

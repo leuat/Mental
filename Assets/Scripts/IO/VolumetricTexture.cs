@@ -40,7 +40,7 @@ public class VolumetricTexture
 
     }
 
-    public void fromByteArray(byte[] bytes, Vector3 newScale, Vector3 orgSize)
+    public void fromByteArray(byte[] bytes, Vector3 newScale, Vector3 orgSize, int dType)
     {
         Color c;
         c.a = 1;
@@ -51,9 +51,11 @@ public class VolumetricTexture
                 for (float k = 0; k < orgSize.z; k += newScale.z)
                 {
                     int idx = (int)(i*orgSize.z*orgSize.y + j*orgSize.z + k);
-                    c.r = bytes[3*idx + 0];
-                    c.g = bytes[3*idx + 1];
-                    c.b = bytes[3*idx + 2];
+                    c.r = bytes[dType*idx + 0];
+                    c.g = bytes[dType * idx + 1];
+                    c.b = c.r;
+                    if (dType>2)
+                        c.b = bytes[dType * idx + 2];
                     //if (idx>bytes.Length) { }
                     c.a = c.r;
                     cols[p++] = c;

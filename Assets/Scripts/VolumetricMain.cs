@@ -17,6 +17,22 @@ namespace LemonSpawn
         [Range(0, 1)]
         private float cutoff = 0.15f;
         [SerializeField]
+        [Range(0, 100)]
+        private float shininess = 50f;
+        [SerializeField]
+        [Range(0, 4)]
+        private float renderType = 0f;
+        [SerializeField]
+        [Range(-1, 1)]
+        private float splitPosX = -1f;
+        [SerializeField]
+        [Range(-1, 1)]
+        private float splitPosY = -1f;
+        [SerializeField]
+        [Range(-1, 1)]
+        private float splitPosZ = -1f;
+
+        [SerializeField]
         private Vector4 clipDimensions = new Vector4(100, 100, 100, 0);
 
         public float FOV = 70;
@@ -33,6 +49,9 @@ namespace LemonSpawn
         public Vector3 splitPlane = new Vector3(1, 0, 0);
         public Vector3 splitPos = Vector3.zero;
 
+        public Vector3 interactColor = new Vector3(1, 1, 1);
+        
+
         public void CreateViewport()
         {
             //            ViewMat = Matrix4x4.LookAt(rayCamera, rayTarget, Vector3.up);
@@ -43,8 +62,12 @@ namespace LemonSpawn
             rayMarchMat.SetVector("_LightDir", lightDir);
 
             rayMarchMat.SetVector("_SplitPlane", splitPlane);
+            splitPos = new Vector3(splitPosX, splitPosY, splitPosZ);
             rayMarchMat.SetVector("_SplitPos", splitPos);
             rayMarchMat.SetFloat("_Cutoff", cutoff);
+            rayMarchMat.SetFloat("_Shininess", shininess);
+            rayMarchMat.SetVector("_InteractColor", interactColor);
+            rayMarchMat.SetFloat("_RenderType", renderType);
         }
 
 
@@ -54,9 +77,11 @@ namespace LemonSpawn
             cameraPos.z = 4;
 
             VolumetricTexture vt = new VolumetricTexture();
-//            vt.CreateNoise(Vector3.one * 128, 3);
+            vt.CreateNoise(Vector3.one * 128, 3);
 
-            Nifti n = new Nifti(Application.dataPath + "/../data/atlas1.nii");
+ //           Nifti n = new Nifti(Application.dataPath + "/../data/atlas3.nii",3);
+          Nifti n = new Nifti(Application.dataPath + "/../data/atlas1.nii", 3);
+            //Nifti n = new Nifti(Application.dataPath + "/../data/atlas2.nii",2);
             vt = n.toTexture(new Vector3(1, 2, 1));
 
             rayMarchMat.SetTexture("_VolumeTex", vt.texture);

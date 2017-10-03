@@ -210,6 +210,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   opacity: 0.37
+  cutoff: 0.15
+  shininess: 50
   clipDimensions: {x: 100, y: 100, z: 100, w: 0}
   FOV: 70
   plane: {fileID: 1453942976}
@@ -217,6 +219,9 @@ MonoBehaviour:
   lightDir: {x: 0.70710677, y: 0.70710677, z: 0}
   rayCamera: {x: 0, y: 0, z: 0}
   rayTarget: {x: 0, y: 0, z: 0}
+  splitPlane: {x: 1, y: 0, z: 0}
+  splitPos: {x: -2, y: 0, z: 0}
+  interactColor: {x: 1, y: 1, z: 1}
 --- !u!1 &1453942976
 GameObject:
   m_ObjectHideFlags: 0

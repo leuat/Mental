@@ -32,7 +32,9 @@ Shader "LemonSpawn/Ray Marching"
 	uniform float3 _SplitPlane;
 	uniform float3 _SplitPos;
 	uniform float _Cutoff;
-
+	uniform float _Shininess;
+	uniform float3 _InteractColor;
+	uniform float _RenderType;
 
 #define S 256
 
@@ -112,11 +114,10 @@ Shader "LemonSpawn/Ray Marching"
 		return clamp(-dot(p, planeNormal), 0, 1);
 	}
 
-	half4 raymarchOpacity(float3 pos, float3 dir, AABB box, out float3 opos)
+	half4 raymarchOpacity(float3 pos, float3 dir, AABB box)
 	{
 		float4 dst = 0;
 		float3 stepDist = dir * STEP_SIZE;
-		opos = pos;
 		for (int k = 0; k < STEP_CNT; k++)
 		{
 			float4 src = getTex(pos);
@@ -148,6 +149,7 @@ Shader "LemonSpawn/Ray Marching"
 /*			src.a *= saturate(_Opacity * border)*pointPlane(pos, _SplitPos, _SplitPlane);
 			src.rgb *= src.a;
 			dst = (1.0f - dst.a) * src + dst;*/
+			src.xyz *= _InteractColor;
 			if (length(src.xyz) > 3*_Cutoff) {
 				dst = src;
 				dst.xyz = normalize(dst.xyz);
@@ -228,7 +230,7 @@ Shader "LemonSpawn/Ray Marching"
 
 				specularReflection = float3(0.9,0.8,0.7) * pow(max(0.0, dot(
 						reflect(-_LightDir, normal),
-						viewDirection*-1)), 50);
+						viewDirection*-1)), _Shininess);
 			}
 			val.xyz += specularReflection;
 
@@ -255,9 +257,19 @@ Shader "LemonSpawn/Ray Marching"
 							float t0, t1;
 							if (IntersectBox(r, box, t0, t1)) {
 								float3 opos;
-								float4 val = raymarch(r.Origin + r.Dir*t1 + float3(0.0, 0.0, 0), r.Dir*-1, box, opos);
-								//return val;
-								return applyLight(val, opos, r.Dir*-1);
+								if (_RenderType < 0.5) {
+									float4 val = raymarch(r.Origin + r.Dir*t1 + float3(0.0, 0.0, 0), r.Dir*-1, box, opos);
+									//return val;
+									return applyLight(val, opos, r.Dir*-1);
+								}
+								if (_RenderType > 1.5 && _RenderType < 2.5) {
+									return raymarchOpacity(r.Origin + r.Dir*t1 + float3(0.0, 0.0, 0), r.Dir*-1, box);
+								}
+								if (_RenderType < 2.5 && _RenderType<3.5) {
+									return  raymarch(r.Origin + r.Dir*t1 + float3(0.0, 0.0, 0), r.Dir*-1, box, opos);
+									//return val;
+								}
+
 							}
 						return half4(0, 0, 0, 1);
 
