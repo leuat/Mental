@@ -1,12 +1,15 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
 Shader "LemonSpawn/Ray Marching"
 {
 
 	CGINCLUDE
 
+
 #include "UnityCG.cginc"
-#pragma target 4.0
+#pragma target  3.0
 #pragma profileoption MaxLocalParams=1024 
 #pragma profileoption NumInstructionSlots=4096
 #pragma profileoption NumMathInstructionSlots=4096
@@ -14,27 +17,28 @@ Shader "LemonSpawn/Ray Marching"
 		struct v2f {
 		float4 pos : POSITION;
 		float2 uv[2] : TEXCOORD0;
-		float3 opos : TEXCOORD2;
+		float4 vertex : TEXCOORD2;
 	};
-
+	
 	sampler3D _VolumeTex;
-	float4 _VolumeTex_TexelSize;
 
-	sampler2D _FrontTex;
-	sampler2D _BackTex;
 
-	float4 _LightPos;
-
-	float _Dimensions;
 
 	float _Opacity;
-	float4 _ClipDims;
-	float4 _ClipPlane;
+
+	uniform float4x4 _ViewMatrix;
+	uniform float3 _Camera;
+	uniform float _Perspective;
+	uniform float3 _SplitPlane;
+	uniform float3 _SplitPos;
+	uniform float _Cutoff;
 
 
-#define TOTAL_STEPS 128.0
-#define STEP_CNT 128
-#define STEP_SIZE 1 / 128.0
+#define S 256
+
+#define TOTAL_STEPS S
+#define STEP_CNT S
+#define STEP_SIZE 1 / S
 
 
 	struct Ray {
@@ -71,7 +75,7 @@ Shader "LemonSpawn/Ray Marching"
 	}
 
 	inline float getI(float3 pos) {
-		return  tex3D(_VolumeTex, pos + float3(0.5, 0.5, 0.5)).a;
+		return  length(tex3D(_VolumeTex, pos + float3(0.5, 0.5, 0.5)).xyz);
 	}
 
 	uniform float3 _LightDir;
@@ -83,62 +87,86 @@ Shader "LemonSpawn/Ray Marching"
 		float3 y = float3(0, 1, 0);
 		float3 z = float3(0, 0, 1);
 		float3 N = float3((getI(pos - d*x) - getI(pos + d*x)),
-			(getI(pos - d*y) - getI(pos + d*y)) / dd,
-			(getI(pos - d*z) - getI(pos + d*z)) / dd);
+			(getI(pos - d*y) - getI(pos + d*y)),
+			(getI(pos - d*z) - getI(pos + d*z)));
 		return normalize(N);
 
 	}
 
+
+
 	inline float getShadow(float3 pos) {
 		float l = 1;
-		float step = 0.03;
+		float step = 0.05;
 		for (int i = 0; i < 10; i++) {
 			l = l - getTex(pos + _LightDir * 1 * step).a*0.4;
 		}
 
-		return clamp(l, 0, 1);
+		return clamp(l, 0.25, 1);
 
 	}
 
 
-	half4 raymarch(float3 pos, float3 dir, AABB box, out float3 opos)
+	float pointPlane(float3 pos, float3 planePos, float3 planeNormal) {
+		float3 p = planePos - pos;
+		return clamp(-dot(p, planeNormal), 0, 1);
+	}
+
+	half4 raymarchOpacity(float3 pos, float3 dir, AABB box, out float3 opos)
 	{
-		//float3 frontPos = float3(i.uv[0], -1);
-		//float3 backPos  = float3(i.uv[1], 1);
-		//float3 frontPos = tex2D(_FrontTex, i.uv[1]).xyz;
-		//float3 backPos = tex2D(_BackTex, i.uv[1]).xyz;
-
-
-//		float3 dir = backPos - frontPos;
-	//	float3 pos = frontPos;
 		float4 dst = 0;
 		float3 stepDist = dir * STEP_SIZE;
 		opos = pos;
 		for (int k = 0; k < STEP_CNT; k++)
 		{
-
-
 			float4 src = getTex(pos);
+			float border = insideBox(pos, box);
 
-
-			float3 border = insideBox(pos, box);
-
-			src.a *= saturate(_Opacity * border);
+			src.a *= saturate(_Opacity * border)*pointPlane(pos, _SplitPos, _SplitPlane);
 			src.rgb *= src.a;
 			dst = (1.0f - dst.a) * src + dst;
-			if (length(dst) > 0.15) {
-				dst *= 10;
-				opos = pos;
-				break;
-			}
-
-			//dst += src*0.001;
-
 			pos += stepDist;
 		}
 		//		dst.x -=1;
 		return dst * 2;
 	}
+
+
+	half4 raymarch(float3 pos, float3 dir, AABB box, out float3 opos)
+	{
+		float4 dst = float4(0,0,0,1);
+		float3 stepDist = dir * STEP_SIZE;
+		opos = pos;
+		for (int k = 0; k < STEP_CNT; k++)
+		{
+			float4 src = getTex(pos);
+			float border = insideBox(pos, box);
+
+
+			src *= border*pointPlane(pos, _SplitPos, _SplitPlane);
+
+/*			src.a *= saturate(_Opacity * border)*pointPlane(pos, _SplitPos, _SplitPlane);
+			src.rgb *= src.a;
+			dst = (1.0f - dst.a) * src + dst;*/
+			if (length(src.xyz) > 3*_Cutoff) {
+				dst = src;
+				dst.xyz = normalize(dst.xyz);
+				dst.a = 1;
+				opos = pos;
+				break;
+			}
+			
+			//dst += src*0.001;
+
+			pos += stepDist;
+		}
+		
+		//		dst.x -=1;
+		return dst;
+	}
+
+
+
 
 	ENDCG
 
@@ -149,8 +177,8 @@ Shader "LemonSpawn/Ray Marching"
 		Pass
 	{
 		CGPROGRAM
-#pragma vertex vert
-#pragma fragment frag
+		#pragma vertex vert
+		#pragma fragment frag
 
 		v2f vert(appdata_img v)
 	{
@@ -158,17 +186,13 @@ Shader "LemonSpawn/Ray Marching"
 		o.pos = UnityObjectToClipPos(v.vertex);
 		o.uv[0] = v.texcoord.xy;
 		o.uv[1] = v.texcoord.xy;
-		o.opos = v.vertex.xyz;
+		o.vertex = v.vertex;
 		/*#if SHADER_API_D3D9
 		if (_MainTex_TexelSize.y < 0)
 		o.uv[0].y = 1 - o.uv[0].y;
 		#endif*/
 		return o;
 	}
-	uniform float4x4 _ViewMatrix;
-	uniform float3 _Camera;
-	uniform float _Perspective;
-
 	float3 coord2ray2(float x, float y, float width, float height) {
 
 		float aspect_ratio = 1;
@@ -185,33 +209,62 @@ Shader "LemonSpawn/Ray Marching"
 		return normalize(res);
 	}
 
+		half4 applyLight(half4 val, float3 opos, float3 viewDirection) {
+			float3 normal = getNormal(opos);
+			float diffuseLight = clamp(dot(normal, _LightDir) + 0.2,0.04,1);
+			val.xyz *= diffuseLight;
+
+
+			float3 specularReflection;
+			if (dot(normal, _LightDir) < 0.0)
+				// light source on the wrong side?
+			{
+				specularReflection = float3(0.0, 0.0, 0.0);
+				// no specular reflection
+			}
+			else // light source on the right side
+			
+			{
+
+				specularReflection = float3(0.9,0.8,0.7) * pow(max(0.0, dot(
+						reflect(-_LightDir, normal),
+						viewDirection*-1)), 50);
+			}
+			val.xyz += specularReflection;
+
+			val.xyz *= getShadow(opos);
+
+			return val;
+
+		}
+
 		half4 frag(v2f i) : COLOR{
 			//return half4(1, 0, 0, 1);
 				//t = 0;
 			float3 camera = _Camera;
 
-				Ray r;
-				r.Dir = coord2ray2(i.uv[0].x, i.uv[0].y - 0.0, 1, 1);
+			//			return float4(1, 1, 1, 1);
+							Ray r;
+							r.Dir = coord2ray2(i.uv[0].x, i.uv[0].y - 0.0, 1, 1);
 
-				r.Origin = camera;
+							r.Origin = camera;
 
-				AABB box;
-				box.Min = float3(-1, -1, -1) * 0.5;
-				box.Max = float3(1,1,1) * 0.5;
-				float t0, t1;
-				if (IntersectBox(r, box, t0, t1)) {
-					float3 opos;
-					float4 val = raymarch(r.Origin + r.Dir*t1 + float3(0.0, 0.0, 0), r.Dir*-1, box, opos);
-					float l = getShadow(opos);
-					val.xyz *= l;
-					return val;
-				}
-			return half4(0, 0, 0, 1);
+							AABB box;
+							box.Min = float3(-1, -1, -1) * 0.5;
+							box.Max = float3(1,1,1) * 0.5;
+							float t0, t1;
+							if (IntersectBox(r, box, t0, t1)) {
+								float3 opos;
+								float4 val = raymarch(r.Origin + r.Dir*t1 + float3(0.0, 0.0, 0), r.Dir*-1, box, opos);
+								//return val;
+								return applyLight(val, opos, r.Dir*-1);
+							}
+						return half4(0, 0, 0, 1);
 
 
-		}
-	ENDCG
-													}
+					}
+				ENDCG
+																}
 	}
 
 		Fallback off

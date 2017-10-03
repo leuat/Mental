@@ -12,8 +12,6 @@ using System.Collections;
  * 
 */
 
-namespace LemonSpawn {
-
 public class Noise4D  {
 	
 	// Raw Simplex noise - a single noise value.
@@ -540,5 +538,4 @@ public class Noise4D  {
 	float dot(  int[,] g, int p, float x,  float y,  float z,  float w ) { return g[p,0]*x + g[p,1]*y + g[p,2]*z + g[p,3]*w; }
 	
 	
-}
 }

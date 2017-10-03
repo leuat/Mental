@@ -23,8 +23,6 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine.UI;
 
-namespace LemonSpawn
-{
     [System.Serializable]
     public class BaseCollection
     {
@@ -1076,4 +1074,3 @@ namespace LemonSpawn
                 r.material = newMat;
         }
     }
-}
