@@ -188,7 +188,7 @@ namespace LemonSpawn
         public void LoadFile() {
             string filename = Util.getComboValue("drpSelectFile");
             int forceValue = int.Parse(Util.getComboValue("cmbForceResolution"));
-            Nifti n = new Nifti(Application.dataPath + "/../data/" + filename);
+            Nifti n = new Nifti(filename);
 
             Vector3 scaleValues = n.findNewResolutionScale(forceValue);
             Debug.Log("forcevalue is " + forceValue);

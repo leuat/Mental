@@ -11,6 +11,35 @@ using UnityEngine;
 
 public class Nifti
 {
+
+    public class Label
+    {
+        public string name;
+        public int index;
+        public Vector3 color;
+        public Vector3 extra;
+        public Label(int i, string n, Vector3 c, Vector3 e)
+        {
+            extra = e;
+            color = c;
+            name = n;
+            index = i;
+        }
+        public Label(string[] s)
+        {
+            index = int.Parse(s[0]);
+            color.x = float.Parse(s[1]);
+            color.y = float.Parse(s[2]);
+            color.z = float.Parse(s[3]);
+
+            extra.x = float.Parse(s[4]);
+            extra.y = float.Parse(s[5]);
+            extra.z = float.Parse(s[6]);
+
+            name = s[7];
+        }
+    }
+
     public struct NiftiHeader
     {
 
@@ -106,6 +135,7 @@ public class Nifti
 
     public DataType dataType = DataType.DT_NONE;
     public int BytesPerPixel = 0;
+    public Dictionary<int, Label> indexedColors = new Dictionary<int, Label>();
 
     public static NiftiHeader HeaderFromStream(FileStream fs)
     {
@@ -150,6 +180,37 @@ public class Nifti
 
         return DataType.DT_NONE;
     }
+    
+
+    private void LoadLabelTextFile(string fileName)
+    {
+        StreamReader theReader = new StreamReader(fileName);
+        string line;
+        using (theReader)
+        {
+            do
+            {
+                line = theReader.ReadLine();
+                if (line != null && line[0]!='#')
+                {
+                    string[] s = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    Label l = new Label(s);
+                    indexedColors[l.index] = l;
+                }
+            }
+            while (line != null);
+            theReader.Close();
+        }
+    }
+
+
+    public void LoadLabel(string filename)
+    {
+        LoadLabelTextFile(filename);
+
+    }
+
+
 
     public void Load(string filename)
     {
@@ -230,6 +291,7 @@ public class Nifti
         Vector3 newSize = new Vector3(size.x / newScale.x, size.y / newScale.y, size.z / newScale.z);
         byte[] data = new byte[(int)(3 * newSize.x* newSize.y* newSize.z)];
         byte[] floatArray = new byte[4];
+        byte c1=0, c2=0, c3=0;
         for (float i = 0; i < size.x; i += newScale.x)
             for (float j = 0; j < size.y; j += newScale.y)
                 for (float k = 0; k < size.z; k += newScale.z)
@@ -243,10 +305,23 @@ public class Nifti
                     }
                     if (dataType == DataType.DT_UINT16)
                     {
-                        ushort val = (ushort)(((rawData[2 * idx + 0]) << 8) | (rawData[2 * idx + 1]));
-                        data[3 * p + 0] = (byte)(val/256);
-                        data[3 * p + 1] = (byte)(val /256);
-                        data[3 * p + 2] = (byte)(val /256);
+                        ushort val = (ushort)(((rawData[2 * idx + 1]) << 8) | (rawData[2 * idx + 0]));
+                        if (!hasIndexing || !indexedColors.ContainsKey(val))
+                        {
+                            c1 = (byte)(val / 256);
+                            c2 = (byte)(val / 256);
+                            c3 = (byte)(val / 256);
+                        }
+                        else
+                        {
+                            Label l = indexedColors[val];
+                            c1 = (byte)l.color.x;
+                            c2 = (byte)l.color.y;
+                            c3 = (byte)l.color.z;
+                        }
+                        data[3 * p + 0] = c1;
+                        data[3 * p + 1] = c2;
+                        data[3 * p + 2] = c3;
                     }
                     if (dataType == DataType.DT_FLOAT)
                     {
@@ -303,9 +378,27 @@ public class Nifti
 
     }
 
+    private bool hasIndexing = false;
+
     public Nifti(string filename)
     {
-        Load(filename);
+        string[] split = filename.Split('.');
+ 
+        if (split[1] == "nii")
+        {
+            Load(Application.dataPath + "/../data/" + filename);
+            return;
+        }
+        if (split[1] == "label")
+        {
+            LoadLabel(Application.dataPath + "/../data/" + filename);
+            hasIndexing = true;
+            Load(Application.dataPath + "/../data/" + split[0] + ".nii");
+
+            return;
+        }
+        Debug.Log("Could not recognize file format");
+
     }
 
     public Vector3 size = new Vector3(1, 1, 1);
