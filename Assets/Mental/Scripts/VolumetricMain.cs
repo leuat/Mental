@@ -55,6 +55,7 @@ namespace LemonSpawn
         // Use this for initialization
         public GameObject plane;
         public Material rayMarchMat;
+		public Material CrossectionMat;
         public Vector3 lightDir = new Vector3(1, 1, 0).normalized;
 
         public Vector3 rayCamera, rayTarget;
@@ -92,8 +93,13 @@ namespace LemonSpawn
 
         }
 
-        public void CreateViewport()
+        public void UpdateMaterials()
         {
+
+			// Make sure point is always closest to origin
+
+
+
             //            ViewMat = Matrix4x4.LookAt(rayCamera, rayTarget, Vector3.up);
             ViewMat = Matrix4x4.LookAt(rayTarget, rayCamera, Vector3.up);
             rayMarchMat.SetMatrix("_ViewMatrix", ViewMat);
@@ -103,6 +109,9 @@ namespace LemonSpawn
 
             rayMarchMat.SetVector("_SplitPlane", splitPlane);
             splitPos = new Vector3(splitPosX, splitPosY, splitPosZ);
+			float d = Vector3.Dot (splitPos, splitPlane);
+			splitPos = splitPlane.normalized * d;
+
             rayMarchMat.SetVector("_SplitPos", splitPos);
             rayMarchMat.SetFloat("_Cutoff", cutoff);
             rayMarchMat.SetFloat("_Shininess", shininess);
@@ -110,9 +119,30 @@ namespace LemonSpawn
             rayMarchMat.SetFloat("_Opacity", opacity); // Blending strength 
             rayMarchMat.SetFloat("_Saturation", saturation);
 
+			// CrossectionMat
+
+			CrossectionMat.SetVector("_SplitPlane", splitPlane);
+			CrossectionMat.SetVector("_SplitPos", splitPos);
+/*			Quaternion q = Quaternion.FromToRotation (Vector3.up, splitPlane);
+			Matrix4x4 mat = Matrix4x4.TRS (Vector3.zero, q, Vector3.one);
+			CrossectionMat.SetMatrix ("_planeMatrix", mat);
+*/
+			Vector3 cam = 2*splitPlane + splitPos;
+			ViewMat = Matrix4x4.LookAt(splitPos, cam, Vector3.up);
+
+			CrossectionMat.SetMatrix("_ViewMatrix", ViewMat);
+			CrossectionMat.SetFloat("_Perspective", 30);
+			CrossectionMat.SetVector("_Camera", cam);
+
+
             UpdateKeywords();
         }
 
+
+		void ApplyTexture() {
+			rayMarchMat.SetTexture("_VolumeTex", volTex.texture);
+			CrossectionMat.SetTexture ("_VolumeTex", volTex.texture);
+		}
 
         void Start()
         {
@@ -121,16 +151,7 @@ namespace LemonSpawn
 
             PopulateFileList();
             volTex.CreateNoise(Vector3.one * 64, 3);
-            rayMarchMat.SetTexture("_VolumeTex", volTex.texture);
-
-            //           Nifti n = new Nifti(Application.dataPath + "/../data/atlas3.nii",3);
-            //Nifti n = new Nifti(Application.dataPath + "/../data/atlas2.nii",2);
-
-
-            //            Nifti n = new Nifti(Application.dataPath + "/../data/atlas1.nii", 3);
-            //          vt = n.toTexture(new Vector3(2, 4, 2));
-
-
+			ApplyTexture ();
         }
 
         // Update is called once per frame
@@ -157,9 +178,9 @@ namespace LemonSpawn
 				rotatePlaneAdd.y = 2 * s * Input.GetAxis("Mouse Y") * -1.0f;
 			}
 			rotatePlane += rotatePlaneAdd;
-			rotatePlaneAdd *= 0.9f;
-
-			splitPlane = Quaternion.Euler (rotatePlane.x, rotatePlane.y, 0)*Vector3.up;
+			rotatePlaneAdd *= 0.8f;
+			rotatePlane *= 0.8f;
+			splitPlane = Quaternion.Euler (rotatePlane.x, rotatePlane.y, 0) * splitPlane;
 
 
         }
@@ -206,7 +227,7 @@ namespace LemonSpawn
             Vector3 scaleValues = n.findNewResolutionScale(forceValue);
             
             volTex = n.toTexture(scaleValues);
-            rayMarchMat.SetTexture("_VolumeTex", volTex.texture);
+			ApplyTexture ();
 
 
         }
@@ -220,7 +241,7 @@ namespace LemonSpawn
             //            cameraRotate = Quaternion.Euler(0, cameraPos.y, 0) * Vector3.left;
             rayCamera = cameraPos.z * cameraRotate;
             // Debug.Log(cameraPos.z);
-            CreateViewport();
+			UpdateMaterials();
 
             float t = Time.time * 1;
             if (movingLight)

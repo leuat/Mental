@@ -22,93 +22,12 @@ Shader "LemonSpawn/Ray Marching"
 #pragma multi_compile __ HAS_SHADOWS 
 #pragma multi_compile __ HAS_LIGHTING
 
-	struct v2f {
-		float4 pos : POSITION;
-		float2 uv[2] : TEXCOORD0;
-		float4 vertex : TEXCOORD2;
-	};
 
-	sampler3D _VolumeTex;
-	float _Opacity;
-
-	uniform float4x4 _ViewMatrix;
-	uniform float3 _Camera;
-	uniform float _Perspective;
-	uniform float3 _SplitPlane;
-	uniform float3 _SplitPos;
-	uniform float _Cutoff;
-	uniform float _Shininess;
-	uniform float3 _InteractColor;
-	uniform float _Saturation;
-	//	uniform float _RenderType;
-
-#define S 192
+#define S 256
 
 #define TOTAL_STEPS S
 #define STEP_CNT S
 #define STEP_SIZE 1 / S
-
-
-
-
-	#include "include/util.cginc"
-
-
-	float clipBorders(float3 pos, AABB box) {
-		float border = insideBox(pos, box);
-		return border*sign(pointPlane(pos, _SplitPos, _SplitPlane));
-	}
-
-
-	half4 raymarchOpacity(float3 pos, float3 dir, AABB box)
-	{
-		float4 dst = 0;
-		float3 stepDist = dir * STEP_SIZE;
-		for (int k = 0; k < STEP_CNT; k++)
-		{
-			float4 src = getTex(pos)*clipBorders(pos,box);
-//			float border = insideBox(pos, box);
-
-			src.a *= saturate(_Opacity);
-			src.rgb *= src.a;
-			dst = (1.0f - dst.a) * src + dst;
-			pos += stepDist;
-		}
-		//		dst.x -=1;
-		return dst * 2;
-	}
-
-
-
-	half4 raymarch(float3 pos, float3 dir, AABB box, out float3 opos)
-	{
-		float4 dst = float4(0, 0, 0, 1);
-		float3 stepDist = dir * STEP_SIZE;
-		opos = pos;
-		for (int k = 0; k < STEP_CNT; k++)
-		{
-			float4 src = getTex(pos)*clipBorders(pos, box);
-
-			src.xyz *= _InteractColor;
-			//dst.xyz += src.xyz;
-			if (length(src.xyz) > 4 * _Cutoff) {
-				//dst = src;
-				dst.xyz = normalize(src.xyz);
-				dst.a = 1;
-				opos = pos;
-				break;
-			}
-
-			//dst += src*0.001;
-
-			pos += stepDist;
-		}
-
-		//		dst.x -=1;
-		return dst;
-	}
-
-
 
 
 	ENDCG
@@ -123,19 +42,9 @@ Shader "LemonSpawn/Ray Marching"
 		#pragma vertex vert
 		#pragma fragment frag
 
-		v2f vert(appdata_img v)
-	{
-		v2f o;
-		o.pos = UnityObjectToClipPos(v.vertex);
-		o.uv[0] = v.texcoord.xy;
-		o.uv[1] = v.texcoord.xy;
-		o.vertex = v.vertex;
-		/*#if SHADER_API_D3D9
-		if (_MainTex_TexelSize.y < 0)
-		o.uv[0].y = 1 - o.uv[0].y;
-		#endif*/
-		return o;
-	}
+		#include "include/util.cginc"
+		#include "include/raymarching.cginc"
+
 
 
 	half4 renderPlane(Ray r, float4 col, AABB box, out float dir) {

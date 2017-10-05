@@ -1,5 +1,26 @@
+	struct v2f {
+		float4 pos : POSITION;
+		float2 uv[2] : TEXCOORD0;
+		float4 vertex : TEXCOORD2;
+	};
+
+	sampler3D _VolumeTex;
+	float _Opacity;
+
+	uniform float4x4 _ViewMatrix;
+	uniform float3 _Camera;
+	uniform float _Perspective;
+	uniform float3 _SplitPlane;
+	uniform float3 _SplitPos;
+	uniform float _Cutoff;
+	uniform float _Shininess;
+	uniform float3 _InteractColor;
+	uniform float _Saturation;
 
 	uniform float3 _LightDir;
+
+
+
 
 	struct Ray {
 		float3 Origin;
