@@ -136,6 +136,7 @@ namespace LemonSpawn
         // Update is called once per frame
 
         Vector3 cameraPos, cameraAdd, cameraRotate = new Vector3(0, 0, 1);
+		Vector3 rotatePlaneAdd, rotatePlane;
 
         void UpdateCameraRotate(float s)
         {
@@ -148,6 +149,18 @@ namespace LemonSpawn
             cameraAdd.z += 1 * s * Input.GetAxis("Mouse ScrollWheel") * -1.0f;
             cameraPos += cameraAdd;
             cameraAdd *= 0.9f;
+
+
+			if (Input.GetMouseButton(0))
+			{
+				rotatePlaneAdd.x = 2 * s * Input.GetAxis("Mouse X") * -1f;
+				rotatePlaneAdd.y = 2 * s * Input.GetAxis("Mouse Y") * -1.0f;
+			}
+			rotatePlane += rotatePlaneAdd;
+			rotatePlaneAdd *= 0.9f;
+
+			splitPlane = Quaternion.Euler (rotatePlane.x, rotatePlane.y, 0)*Vector3.up;
+
 
         }
 
@@ -191,8 +204,6 @@ namespace LemonSpawn
             Nifti n = new Nifti(filename);
 
             Vector3 scaleValues = n.findNewResolutionScale(forceValue);
-            Debug.Log("forcevalue is " + forceValue);
-            Debug.Log("force values:  " + scaleValues);
             
             volTex = n.toTexture(scaleValues);
             rayMarchMat.SetTexture("_VolumeTex", volTex.texture);

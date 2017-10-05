@@ -384,12 +384,14 @@ public class Nifti
     {
         string[] split = filename.Split('.');
  
-        if (split[1] == "nii")
+		int final = split.Length - 1;
+
+        if (split[final] == "nii")
         {
             Load(Application.dataPath + "/../data/" + filename);
             return;
         }
-        if (split[1] == "label")
+        if (split[final] == "label")
         {
             LoadLabel(Application.dataPath + "/../data/" + filename);
             hasIndexing = true;
