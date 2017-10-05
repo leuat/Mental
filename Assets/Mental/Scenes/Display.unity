@@ -188,9 +188,15 @@ MonoBehaviour:
   m_CaptionImage: {fileID: 0}
   m_ItemText: {fileID: 1384875422}
   m_ItemImage: {fileID: 0}
-  m_Value: 128
+  m_Value: 5
   m_Options:
     m_Options:
+    - m_Text: 8
+      m_Image: {fileID: 0}
+    - m_Text: 16
+      m_Image: {fileID: 0}
+    - m_Text: 32
+      m_Image: {fileID: 0}
     - m_Text: 64
       m_Image: {fileID: 0}
     - m_Text: 128
@@ -770,7 +776,7 @@ MonoBehaviour:
   renderType: 0
   hasShadows: 1
   hasLighting: 1
-  movingLight: 1
+  movingLight: 0
   saturation: 1
   FOV: 70
   plane: {fileID: 1453942976}
@@ -1016,7 +1022,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 512
+  m_Text: 256
 --- !u!222 &808570192
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1711,8 +1717,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -425, y: 160}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: -380, y: 160}
+  m_SizeDelta: {x: 250, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1384201861
 MonoBehaviour:
