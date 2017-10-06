@@ -222,10 +222,6 @@ public class Nifti
         FileStream fs = File.Open(filename, FileMode.Open);
         header = Nifti.HeaderFromStream(fs);
 
-        /*        for (int i = 0; i < 4; i++)
-                    Debug.Log("N" + i + " : " + header.dim[i]);
-                    */
-
         dataType = getDataType((int)header.datatype);
         BytesPerPixel = header.bitpix / 8;
 
@@ -380,7 +376,7 @@ public class Nifti
 
     private bool hasIndexing = false;
 
-    public Nifti(string filename)
+	public Nifti(string filename, string path)
     {
         string[] split = filename.Split('.');
  
@@ -388,14 +384,15 @@ public class Nifti
 
         if (split[final] == "nii")
         {
-            Load(Application.dataPath + "/../data/" + filename);
+			hasIndexing = false;
+            Load(path + filename);
             return;
         }
         if (split[final] == "label")
         {
-            LoadLabel(Application.dataPath + "/../data/" + filename);
+            LoadLabel(path + filename);
             hasIndexing = true;
-            Load(Application.dataPath + "/../data/" + split[0] + ".nii");
+            Load(path + split[0] + ".nii");
 
             return;
         }

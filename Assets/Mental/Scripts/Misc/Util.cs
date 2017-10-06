@@ -525,6 +525,29 @@ public class Util : MonoBehaviour
             return 0;
     }
 
+	public static void PopulateFileList(string dropbox, string path)
+	{
+		Dropdown cbx = GameObject.Find("drpSelectFile").GetComponent<Dropdown>();
+		cbx.ClearOptions();
+		DirectoryInfo info = new DirectoryInfo(Application.dataPath + "/../data");
+		if (!info.Exists)
+		{
+			UnityEngine.Debug.Log("Could not find data directory : " + path);
+			return;
+		}
+		FileInfo[] fileInfo = info.GetFiles();
+		List<Dropdown.OptionData> data = new List<Dropdown.OptionData>();
+		foreach (FileInfo f in fileInfo)
+		{
+			string name = f.Name;
+			data.Add(new Dropdown.OptionData(name));
+		}
+		cbx.AddOptions(data);
+
+	}
+
+
+
     public static string ColorToHex(Color32 color)
     {
         string hex = "#" + color.r.ToString("X2") + color.g.ToString("X2") + color.b.ToString("X2");
@@ -1058,11 +1081,7 @@ public class Util : MonoBehaviour
             string[] lst = f.Name.Split('.');
             if (lst[1].Trim().ToLower() == fileType.Trim().ToLower())
             {
-
-
-                string text = lst[0].Trim().ToLower();
-
-
+                //string text = lst[0].Trim().ToLower();
                 string name = f.Name;
                 list.Add(name);
 
@@ -1071,6 +1090,22 @@ public class Util : MonoBehaviour
         }
         return list;
     }
+
+	public static void SetTransparent(Texture2D tex, Color alpha) {
+		Color[] cols = tex.GetPixels ();
+		for (int i = 0; i < cols.Length; i++) {
+			Color c = cols [i];
+			if (c.r > alpha.r && c.g> alpha.g && c.b > alpha.b) {
+				cols [i].a = 0;
+			}
+
+		}
+		tex.SetPixels (cols);
+		tex.Apply ();
+
+	}
+
+
     static public void ReplaceAllMaterial(GameObject go, Material newMat)
     {
         foreach (Transform t in go.transform)

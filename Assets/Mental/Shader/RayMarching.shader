@@ -97,7 +97,7 @@ Shader "LemonSpawn/Ray Marching"
 	#endif
 
 
-				val.xyz = saturateColors(val.xyz);
+				val.xyz = _IntensityScale*saturateColors(val.xyz);
 
 			}
 /*			if (planeDir<=0 && length(val.xyz)<0.01)

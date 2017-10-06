@@ -16,7 +16,8 @@
 	uniform float _Shininess;
 	uniform float3 _InteractColor;
 	uniform float _Saturation;
-
+	uniform float _IntensityScale;
+	uniform float _Power;
 	uniform float3 _LightDir;
 
 
@@ -130,6 +131,7 @@
 
 		return normalize(res);
 	}
+
 
 	half4 applyLight(half4 val, float3 opos, float3 viewDirection) {
 			float3 normal = getNormal(opos);

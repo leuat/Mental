@@ -15,6 +15,7 @@
 //			float border = insideBox(pos, box);
 
 			src.a *= saturate(_Opacity);
+			src.a = pow(src.a, _Power);
 			src.rgb *= src.a;
 			dst = (1.0f - dst.a) * src + dst;
 			pos += stepDist;

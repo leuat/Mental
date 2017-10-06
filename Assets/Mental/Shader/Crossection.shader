@@ -71,6 +71,7 @@ Shader "LemonSpawn/Crossection"
 
 
 			val.a = 1;
+			val.xyz *= _IntensityScale;
 			return val;
 
 	
