@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine.UI;
 using System.IO;
 using System.Collections.Generic;
+using UnityEngine.EventSystems;
 
 namespace LemonSpawn
 {
@@ -49,6 +50,15 @@ namespace LemonSpawn
 		[SerializeField]
 		[Range(0, 6)]
 		public float Power = 1;
+		[SerializeField]
+		[Range(0, 1)]
+		public float ColorCutoff = 0;
+		[SerializeField]
+		[Range(0, 1)]
+		public float ColorCutoffStrength = 0;
+		[SerializeField]
+		[Range(0, 1)]
+		public float DotStrength = 1;
 
 		public Material rayMarchMat;
 		public Material CrossectionMat;
@@ -61,6 +71,8 @@ namespace LemonSpawn
 		public Vector3 interactColor = new Vector3(1, 1, 1);
 
 		public Vector3 lightDir = new Vector3(1, 1, 0).normalized;
+
+		public GameObject prefabButton;
 
 
 		private void UpdateKeywords()
@@ -87,10 +99,21 @@ namespace LemonSpawn
 
 		}
 
+		/*
+		 * 1)	scale properly
+		 * 2) 	Atlas structures on/ off + semi-transparent
+		 * 3)	Parameters for cutting etc + arbitrary 
+		 * 
+		 * 
+		 * 
+		 * 
+		 * 
+		 * */
+
+
 		public void UpdateMaterials()
 		{
 
-			// Make sure point is always closest to origin
 
 
 
@@ -99,9 +122,12 @@ namespace LemonSpawn
 			rayMarchMat.SetMatrix("_ViewMatrix", ViewMat);
 			rayMarchMat.SetFloat("_Perspective", FOV);
 			rayMarchMat.SetVector("_Camera", rayCamera);
+			rayMarchMat.SetVector("_CameraDirection", (rayCamera-rayTarget).normalized);
 			rayMarchMat.SetVector("_LightDir", lightDir);
 
 			rayMarchMat.SetVector("_SplitPlane", splitPlane);
+			// Make sure point is always closest to origin
+
 			splitPos = new Vector3(splitPosX, splitPosY, splitPosZ);
 			float d = Vector3.Dot (splitPos, splitPlane);
 			splitPos = splitPlane.normalized * d;
@@ -132,6 +158,10 @@ namespace LemonSpawn
 			CrossectionMat.SetVector("_Camera", cam);
 			CrossectionMat.SetFloat ("_IntensityScale", IntensityScale);
 
+
+			rayMarchMat.SetFloat ("_ColorCutoff", ColorCutoff);
+			rayMarchMat.SetFloat ("_ColorCutoffStrength", ColorCutoffStrength);
+			rayMarchMat.SetFloat ("_DotStrength", DotStrength);
 
 			UpdateKeywords();
 		}
@@ -183,10 +213,12 @@ namespace LemonSpawn
 
 
         private VolumetricTexture volTex = new VolumetricTexture();
+		private VolumetricTexture atlas = new VolumetricTexture();
 
 		public Material anchorMaterial;
+		private Nifti atlasNifti;
 
-
+		public Vector3 atlasScaleValues;
 
         void Start()
         {
@@ -195,22 +227,103 @@ namespace LemonSpawn
 
 			Util.PopulateFileList("drpSelectFile", Application.dataPath + "/../data");
 
-            volTex.CreateNoise(Vector3.one * 64, 3);
+            volTex.CreateNoise(Vector3.one * 64, 3, 0);
 			vParams.ApplyTexture (volTex.texture);
 
 			AnchorImage ai = new AnchorImage ();
 			StartCoroutine(ai.LoadFromUrl ("http://cmbn-navigator.uio.no/navigator/feeder/preview/?id=33133", anchorMaterial));
 
+			LoadAtlas ("WHS_SD_rat_atlas_v2.label");
+
+			PopulateScrollView ();
+
         }
+
+		public void CreateAtlasFromNifti() {
+			int forceValue = int.Parse(Util.getComboValue("cmbForceResolution"));
+			Vector3 scaleValues = atlasNifti.findNewResolutionScale(forceValue);
+
+			atlas = atlasNifti.toTexture(scaleValues, true);
+			vParams.rayMarchMat.SetTexture("_VolumeTexDots", atlas.texture);
+
+
+		}
+
+
+		public void PopulateScrollView() {
+			GameObject go = GameObject.Find ("Content");
+			for (int i = 0; i < go.transform.childCount; i++) {
+				GameObject.Destroy (go.transform.GetChild (i).gameObject);
+			}
+
+			foreach(KeyValuePair<int, Nifti.Label> e in atlasNifti.indexedColors)
+			{
+
+				GameObject goButton = (GameObject)Instantiate(vParams.prefabButton);
+				goButton.transform.SetParent (go.transform);
+				goButton.transform.GetChild (1).GetComponent<Text> ().text = e.Value.name;
+				goButton.transform.localScale = new Vector3(1, 1, 1);
+
+
+				Toggle toggle = goButton.GetComponent<Toggle> ();
+				toggle.isOn = e.Value.toggle;
+				toggle.onValueChanged.AddListener((value) =>
+					{
+						atlasNifti.indexedColors[e.Key].toggle = toggle.isOn;
+					});
+//				e.Value.toggle = true;
+				
+			}
+
+		}
+
+		public void InvertToggle() {
+			foreach (KeyValuePair<int, Nifti.Label> e in atlasNifti.indexedColors)
+				e.Value.toggle = !e.Value.toggle;
+
+			PopulateScrollView ();
+
+				
+		}
+
+
+		void TestDotTexture(VolumetricTexture org) {
+/*			VolumetricTexture vtDots = new VolumetricTexture (org.size);
+			vtDots.RandomDots (250000, 0.01f, org);
+*/
+		//	vParams.rayMarchMat.SetTexture("_VolumeTexDots", vtDots.texture);
+
+
+		}
 
         // Update is called once per frame
 
         Vector3 cameraPos, cameraAdd, cameraRotate = new Vector3(0, 0, 1);
 		Vector3 rotatePlaneAdd, rotatePlane;
 
+		public void Clip() {
+			volTex.ClipData (atlas, 0);
+			vParams.ApplyTexture (volTex.texture);
+		}
+
+		public void ClipInverse() {
+			volTex.ClipData (atlas, 1);
+			vParams.ApplyTexture (volTex.texture);
+		}
+
+
         void UpdateCameraRotate(float s)
         {
 
+			bool ok = false;
+			Ray r = Camera.main.ScreenPointToRay (Input.mousePosition);
+			RaycastHit hit;
+			if (Physics.Raycast(Camera.main.transform.position, r.direction, out hit)) {
+				if (hit.transform.gameObject.name == "Plane")
+					ok = true;
+			}
+			if (!ok)
+				return;
             if (Input.GetMouseButton(1))
             {
                 cameraAdd.x = 2 * s * Input.GetAxis("Mouse X") * -1f;
@@ -235,9 +348,13 @@ namespace LemonSpawn
 
         }
 
+		public void LoadAtlas(string filename) {
+			atlasNifti = new Nifti(filename,Application.dataPath + "/../data/");
 
+			CreateAtlasFromNifti ();
+			//vParams.ApplyTexture (atlas.texture);
 
-
+		}
 
         public void LoadFile() {
             string filename = Util.getComboValue("drpSelectFile");
@@ -246,9 +363,9 @@ namespace LemonSpawn
 
             Vector3 scaleValues = n.findNewResolutionScale(forceValue);
             
-            volTex = n.toTexture(scaleValues);
+            volTex = n.toTexture(scaleValues,false);
 			vParams.ApplyTexture (volTex.texture);
-
+//			TestDotTexture (atlas);
 
         }
 

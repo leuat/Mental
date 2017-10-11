@@ -25,11 +25,11 @@ Shader "LemonSpawn/Crossection"
 
 	ENDCG
 
-		Subshader{
+	Subshader{
 		//ZTest Always Cull Off ZWrite Off
-		Fog{ Mode off }
+	Fog{ Mode off }
 
-		Pass
+	Pass
 	{
 		CGPROGRAM
 		#pragma vertex vert
@@ -38,14 +38,8 @@ Shader "LemonSpawn/Crossection"
 		#include "include/util.cginc"
 		#include "include/raymarching.cginc"
 
-		uniform float4x4 _planeMatrix;
 
 		half4 frag(v2f i) : COLOR{
-/*			float3 uv = float3(i.uv[0].x-0.5, 0, i.uv[0].y-0.5);
-
-			uv = mul(_planeMatrix, uv) + _SplitPos  + float3(0.5, 0.5, 0.5);
-			uv = clamp(uv, -1,1);
-			float4 val = tex3D(_VolumeTex, uv );*/
 
 			Ray r;
 			r.Dir = -coord2ray2(1-i.uv[0].x, i.uv[0].y - 0.0, 1, 1);
@@ -63,23 +57,19 @@ Shader "LemonSpawn/Crossection"
 			float3 isp;
 			if (RayIntersectPlane(r, plane, isp)) {
 				isp = clamp(isp, -1,1);
-				//isp.z*=-1;
-
-				val = getTex(isp);
-
+				val = getTex(_VolumeTex, isp);
 			}
-
-
-			val.a = 1;
-			val.xyz *= _IntensityScale;
+			val.xyz*=val.a*6;
+//			val.a = 1;
+			val.xyz *= 2*_IntensityScale;
 			return val;
 
 	
 
 		}
-ENDCG
-												}
+		ENDCG
 	}
+}
 
 		Fallback off
 

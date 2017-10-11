@@ -5,10 +5,12 @@
 	};
 
 	sampler3D _VolumeTex;
+	sampler3D _VolumeTexDots;
 	float _Opacity;
 
 	uniform float4x4 _ViewMatrix;
 	uniform float3 _Camera;
+	uniform float3 _CameraDirection;
 	uniform float _Perspective;
 	uniform float3 _SplitPlane;
 	uniform float3 _SplitPos;
@@ -19,8 +21,38 @@
 	uniform float _IntensityScale;
 	uniform float _Power;
 	uniform float3 _LightDir;
+	uniform float _ColorCutoff;
+	uniform float _ColorCutoffStrength;
+	uniform float _DotStrength;
 
 
+
+
+	inline float iqhash(float n)
+{
+	return frac(sin(n)*753.5453123);
+	
+/*	float p = 50.0*frac(n*0.3183099 + 0.71);
+	return -1.0 + 2.0*frac(n*n+(0.23*n));*/
+
+}
+
+float noise(float3 x)
+{
+
+	float3 p = floor(x);
+	float3 f = frac(x);
+
+	f = f*f*(3.0 - 2.0*f);
+	float n = p.x + p.y*157.0 + 113.0*p.z;
+
+	return lerp(lerp(lerp(iqhash(n + 0.0), iqhash(n + 1.0), f.x),
+		lerp(iqhash(n + 157.0), iqhash(n + 158.0), f.x), f.y),
+		lerp(lerp(iqhash(n + 113.0), iqhash(n + 114.0), f.x),
+			lerp(iqhash(n + 270.0), iqhash(n + 271.0), f.x), f.y), f.z);
+
+
+}
 
 
 	struct Ray {
@@ -68,8 +100,8 @@
 		return s.x * s.y*s.z;
 	}
 
-	inline float4 getTex(float3 pos) {
-		return  tex3D(_VolumeTex, pos + float3(0.5, 0.5, 0.5));
+	inline float4 getTex(sampler3D tex, float3 pos) {
+		return  tex3D(tex, pos + float3(0.5, 0.5, 0.5));
 	}
 
 	inline float getI(float3 pos) {
@@ -109,7 +141,7 @@
 		float step = 0.05;
 		for (int i = 0; i < 10; i++) {
 			float3 p = pos + _LightDir * 1 * step;
-			l = l - getTex(p).a*0.4*pointPlane(p, _SplitPos, _SplitPlane);;
+			l = l - getTex(_VolumeTex, p).a*0.4*pointPlane(p, _SplitPos, _SplitPlane);;
 		}
 
 		return clamp(l, 0.25, 1);
@@ -136,18 +168,22 @@
 	half4 applyLight(half4 val, float3 opos, float3 viewDirection) {
 			float3 normal = getNormal(opos);
 			float diffuseLight = clamp(dot(normal, _LightDir) + 0.2,0.04,1);
-			val.xyz *= diffuseLight;
 
 
 			float specularReflection = float3(0.9,0.8,0.7) * pow(max(0.0, dot(
 						reflect(-_LightDir, normal),
 						viewDirection*-1)), _Shininess);
+
 	//}		
 			// Make sure only front is shown
 			specularReflection = clamp(specularReflection*sign (dot(normal, _LightDir)),0,1);
 
 
-			val.xyz += specularReflection;
+
+			float scaling = clamp(pointPlane(opos, _SplitPos, _SplitPlane)*10.0 + 0.02,0,1);
+			val.xyz = (val.xyz*diffuseLight + specularReflection)*scaling + (1-scaling)*val.xyz;
+//			val.xyz *= diffuseLight;
+//			val.xyz += specularReflection;
 
 			return val;
 

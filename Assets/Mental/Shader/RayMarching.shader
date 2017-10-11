@@ -22,8 +22,11 @@ Shader "LemonSpawn/Ray Marching"
 #pragma multi_compile __ HAS_SHADOWS 
 #pragma multi_compile __ HAS_LIGHTING
 
-
 #define S 256
+
+
+
+
 
 #define TOTAL_STEPS S
 #define STEP_CNT S
@@ -44,6 +47,7 @@ Shader "LemonSpawn/Ray Marching"
 
 		#include "include/util.cginc"
 		#include "include/raymarching.cginc"
+
 
 
 
@@ -78,7 +82,7 @@ Shader "LemonSpawn/Ray Marching"
 			float4 val = float4(0,0,0,0);
 			if (IntersectBox(r, box, t0, t1)) {
 				float3 opos = float3(0,0,0);
-
+				//return float4(1,0,0,1);
 
 	#ifdef SHADING_HARD
 				val = raymarch(r.Origin + r.Dir*t0 + float3(0.0, 0.0, 0), r.Dir, box, opos);

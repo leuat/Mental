@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 [System.Serializable]
 public class BaseCollection
@@ -962,6 +963,46 @@ public class Util : MonoBehaviour
         return new Vector3(Mathf.Min(o.x, a.x), Mathf.Min(o.y, a.y), Mathf.Min(o.z, a.z));
     }
 
+
+	public static void AddText(string gameObject, string text, int fs) {
+		GameObject go = GameObject.Find (gameObject);
+		GameObject textGO = new GameObject ();
+		textGO.transform.parent = go.transform;
+		Text t = textGO.AddComponent<Text> ();
+		t.font = (Font)Resources.GetBuiltinResource (typeof(Font), "Arial.ttf");
+		t.text = text;
+		t.fontSize = fs;
+	}
+
+
+	public static void AddEventTriggerListener(EventTrigger trigger,
+		EventTriggerType eventType,
+		System.Action<BaseEventData> callback)
+	{
+		EventTrigger.Entry entry = new EventTrigger.Entry();
+		entry.eventID = eventType;
+		entry.callback = new EventTrigger.TriggerEvent();
+		entry.callback.AddListener(new UnityEngine.Events.UnityAction<BaseEventData>(callback));
+		trigger.triggers.Add(entry);
+	}
+
+
+	public static void AddToggle(string gameObject, string text, GameObject prefab) {
+		GameObject go = GameObject.Find (gameObject);
+		/*GameObject textGO = new GameObject ();
+		textGO.transform.parent = go.transform;
+		Button b = textGO.AddComponent<Button> ();*/
+
+		GameObject goButton = (GameObject)Instantiate(prefab);
+		goButton.transform.SetParent (go.transform);
+		goButton.transform.GetChild (1).GetComponent<Text> ().text = text;
+		goButton.transform.localScale = new Vector3(1, 1, 1);
+
+		//t.font = (Font)Resources.GetBuiltinResource (typeof(Font), "Arial.ttf");
+//		Text t = textGO.AddComponent<Text>();
+//		t.text = text;
+//		t.fontSize = fs;
+	}
 
     public static double LerpDegrees(double start, double end, double amount)
     {
