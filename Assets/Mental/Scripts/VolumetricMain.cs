@@ -14,24 +14,24 @@ namespace LemonSpawn
 
 		[SerializeField]
 		[Range(0, 2)]
-		private float opacity = 1;
+		public float opacity = 1;
 		[SerializeField]
 		[Range(0, 1)]
-		private float cutoff = 0.0f;
+		public float cutoff = 0.0f;
 		[SerializeField]
 		[Range(0, 100)]
 		private float shininess = 50f;
 		[SerializeField]
 		[Range(-1, 1)]
-		private float splitPosX = -1f;
+		public float splitPosX = -1f;
 		[SerializeField]
 		[Range(-1, 1)]
-		private float splitPosY = -1f;
+		public float splitPosY = -1f;
 		[SerializeField]
 		[Range(-1, 1)]
-		private float splitPosZ = -1f;
+		public float splitPosZ = -1f;
 		[SerializeField]
-		private RenderType renderType = RenderType.Hard;
+		public RenderType renderType = RenderType.Hard;
 		[SerializeField]
 		private bool hasShadows = true;
 		[SerializeField]

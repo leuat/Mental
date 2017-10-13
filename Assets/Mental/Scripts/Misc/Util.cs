@@ -261,6 +261,11 @@ public class Util : MonoBehaviour
         return d.options[d.value].text;
     }
 
+    public static float getScrollValue(String s)
+    {
+        Scrollbar d = GameObject.Find(s).GetComponent<Scrollbar>();
+        return d.value;
+    }
 
     public static void ReScaleDetach(GameObject go, Vector3 scale)
     {

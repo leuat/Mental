@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 8f57139c916ec9e4eb1038b44fdf26a4
+timeCreated: 1507893752
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: StarmiX
+  fontNames:
+  - StarmiX
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

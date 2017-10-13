@@ -114,11 +114,36 @@ namespace LemonSpawn
 
         public void ConstrainAtlas()
         {
-            int forceValue = int.Parse(Util.getComboValue("cmbForceResolution"));
+            int forceValue = int.Parse(GetComponent<UIManager>().getComboValue("cmbForceResolution"));
             vMain.CreateAtlasFromNifti(forceValue); 
 
         }
 
+        private void UpdateParameters()
+        {
+            UIManager ui = GetComponent<UIManager>();
+            bool isa = ui.pnlParameters.activeSelf;
+            ui.pnlParameters.SetActive(true);
+            vParams.IntensityScale = Util.getScrollValue("scrIntensity") * 4;
+            vParams.DotStrength= Util.getScrollValue("scrAtlasIntensity") * 0.5f;
+
+            vParams.splitPosX = Util.getScrollValue("scrPlaneX") * 2 - 1;
+            vParams.splitPosY = Util.getScrollValue("scrPlaneY") * 2 - 1;
+            vParams.splitPosZ = Util.getScrollValue("scrPlaneZ") * 2 - 1;
+
+            vParams.cutoff = Util.getScrollValue("scrCutoff");
+
+            string s = Util.getComboValue("drpShaderType");
+            if (s == "Hard")
+                vParams.renderType = VolumetricParams.RenderType.Hard;
+            else
+                vParams.renderType = VolumetricParams.RenderType.Opacity;
+
+            vParams.opacity = Util.getScrollValue("scrOpacity") * 4;
+            vParams.Power = Util.getScrollValue("scrPower") * 4;
+            ui.pnlParameters.SetActive(isa);
+
+        }
 
         // Update is called once per frame
         void Update()
@@ -137,6 +162,8 @@ namespace LemonSpawn
                 vParams.lightDir = new Vector3(Mathf.Cos(t), -0.1f, Mathf.Sin(t)).normalized;
 
             vParams.splitPlane = camrot.getSplitPlane(vParams.splitPlane);
+
+            UpdateParameters();
 
         }
     }
