@@ -72,6 +72,8 @@ namespace LemonSpawn
 
 		public Vector3 lightDir = new Vector3(1, 1, 0).normalized;
 
+        public Vector3 internalScale = Vector3.one;
+
 		public GameObject prefabButton;
 
 
@@ -113,10 +115,6 @@ namespace LemonSpawn
 
 		public void UpdateMaterials()
 		{
-
-
-
-
 			//            ViewMat = Matrix4x4.LookAt(rayCamera, rayTarget, Vector3.up);
 			ViewMat = Matrix4x4.LookAt(rayTarget, rayCamera, Vector3.up);
 			rayMarchMat.SetMatrix("_ViewMatrix", ViewMat);
@@ -154,7 +152,7 @@ namespace LemonSpawn
 			ViewMat = Matrix4x4.LookAt(splitPos, cam, Vector3.up);
 
 			CrossectionMat.SetMatrix("_ViewMatrix", ViewMat);
-			CrossectionMat.SetFloat("_Perspective", 30);
+			CrossectionMat.SetFloat("_Perspective", 50);
 			CrossectionMat.SetVector("_Camera", cam);
 			CrossectionMat.SetFloat ("_IntensityScale", IntensityScale);
 
@@ -163,7 +161,11 @@ namespace LemonSpawn
 			rayMarchMat.SetFloat ("_ColorCutoffStrength", ColorCutoffStrength);
 			rayMarchMat.SetFloat ("_DotStrength", DotStrength);
 
-			UpdateKeywords();
+            rayMarchMat.SetVector("_InternalScale", internalScale);
+            CrossectionMat.SetVector("_InternalScale", internalScale);
+
+
+            UpdateKeywords();
 		}
 
 		public void ApplyTexture(Texture3D texture) {
@@ -196,98 +198,49 @@ namespace LemonSpawn
 		}
 
 		public void Apply() {
-			material.SetTexture ("_MainTex", image); 
+			//material.SetTexture ("_MainTex", image); 
 		}
 
 	}
 
 
-    public class VolumetricMain : MonoBehaviour
+    public class VolumetricMain 
     {
+        private VolumetricParams vParams;
+        private GameObject plane;
 
-		public VolumetricParams vParams = new VolumetricParams ();
+        public VolumetricMain(GameObject pl, VolumetricParams vp)
+        {
+            vParams = vp;
+            plane = pl;
 
+        }
 
-        // Use this for initialization
-        public GameObject plane;
-
-
-        private VolumetricTexture volTex = new VolumetricTexture();
-		private VolumetricTexture atlas = new VolumetricTexture();
+        public VolumetricTexture volTex = new VolumetricTexture();
+		public VolumetricTexture atlas = new VolumetricTexture();
 
 		public Material anchorMaterial;
-		private Nifti atlasNifti;
+		public Nifti atlasNifti;
 
 		public Vector3 atlasScaleValues;
 
         void Start()
         {
-            plane.GetComponent<Renderer>().material =  vParams.rayMarchMat;
-            cameraPos.z = 1.5f;
-
-			Util.PopulateFileList("drpSelectFile", Application.dataPath + "/../data");
-
-            volTex.CreateNoise(Vector3.one * 64, 3, 0);
-			vParams.ApplyTexture (volTex.texture);
-
-			AnchorImage ai = new AnchorImage ();
-			StartCoroutine(ai.LoadFromUrl ("http://cmbn-navigator.uio.no/navigator/feeder/preview/?id=33133", anchorMaterial));
-
-			LoadAtlas ("WHS_SD_rat_atlas_v2.label");
-
-			PopulateScrollView ();
 
         }
 
-		public void CreateAtlasFromNifti() {
-			int forceValue = int.Parse(Util.getComboValue("cmbForceResolution"));
-			Vector3 scaleValues = atlasNifti.findNewResolutionScale(forceValue);
+        public void CreateAtlasFromNifti(int forceValue)
+        {
+            Vector3 scaleValues = atlasNifti.findNewResolutionScale(forceValue);
 
-			atlas = atlasNifti.toTexture(scaleValues, true);
-			vParams.rayMarchMat.SetTexture("_VolumeTexDots", atlas.texture);
+            atlas = atlasNifti.toTexture(scaleValues, true);
+            vParams.rayMarchMat.SetTexture("_VolumeTexDots", atlas.texture);
 
-
-		}
-
-
-		public void PopulateScrollView() {
-			GameObject go = GameObject.Find ("Content");
-			for (int i = 0; i < go.transform.childCount; i++) {
-				GameObject.Destroy (go.transform.GetChild (i).gameObject);
-			}
-
-			foreach(KeyValuePair<int, Nifti.Label> e in atlasNifti.indexedColors)
-			{
-
-				GameObject goButton = (GameObject)Instantiate(vParams.prefabButton);
-				goButton.transform.SetParent (go.transform);
-				goButton.transform.GetChild (1).GetComponent<Text> ().text = e.Value.name;
-				goButton.transform.localScale = new Vector3(1, 1, 1);
+        }
 
 
-				Toggle toggle = goButton.GetComponent<Toggle> ();
-				toggle.isOn = e.Value.toggle;
-				toggle.onValueChanged.AddListener((value) =>
-					{
-						atlasNifti.indexedColors[e.Key].toggle = toggle.isOn;
-					});
-//				e.Value.toggle = true;
-				
-			}
 
-		}
-
-		public void InvertToggle() {
-			foreach (KeyValuePair<int, Nifti.Label> e in atlasNifti.indexedColors)
-				e.Value.toggle = !e.Value.toggle;
-
-			PopulateScrollView ();
-
-				
-		}
-
-
-		void TestDotTexture(VolumetricTexture org) {
+        void TestDotTexture(VolumetricTexture org) {
 /*			VolumetricTexture vtDots = new VolumetricTexture (org.size);
 			vtDots.RandomDots (250000, 0.01f, org);
 */
@@ -296,95 +249,15 @@ namespace LemonSpawn
 
 		}
 
-        // Update is called once per frame
 
-        Vector3 cameraPos, cameraAdd, cameraRotate = new Vector3(0, 0, 1);
-		Vector3 rotatePlaneAdd, rotatePlane;
-
-		public void Clip() {
-			volTex.ClipData (atlas, 0);
-			vParams.ApplyTexture (volTex.texture);
-		}
-
-		public void ClipInverse() {
-			volTex.ClipData (atlas, 1);
-			vParams.ApplyTexture (volTex.texture);
-		}
-
-
-        void UpdateCameraRotate(float s)
-        {
-
-			bool ok = false;
-			Ray r = Camera.main.ScreenPointToRay (Input.mousePosition);
-			RaycastHit hit;
-			if (Physics.Raycast(Camera.main.transform.position, r.direction, out hit)) {
-				if (hit.transform.gameObject.name == "Plane")
-					ok = true;
-			}
-			if (!ok)
-				return;
-            if (Input.GetMouseButton(1))
-            {
-                cameraAdd.x = 2 * s * Input.GetAxis("Mouse X") * -1f;
-                cameraAdd.y = 2 * s * Input.GetAxis("Mouse Y") * -1.0f;
-            }
-            cameraAdd.z += 0.2f * s * Input.GetAxis("Mouse ScrollWheel") * -1.0f;
-            cameraPos += cameraAdd;
-            cameraAdd *= 0.9f;
-
-
-			if (Input.GetMouseButton(0))
-			{
-				rotatePlaneAdd.x = 2 * s * Input.GetAxis("Mouse X") * -1f;
-				rotatePlaneAdd.y = 2 * s * Input.GetAxis("Mouse Y") * -1.0f;
-			}
-			rotatePlane += rotatePlaneAdd;
-			rotatePlaneAdd *= 0.8f;
-			rotatePlane *= 0.8f;
-
-			vParams.splitPlane = Quaternion.Euler (rotatePlane.x, rotatePlane.y, 0) * vParams.splitPlane;
-
-
-        }
 
 		public void LoadAtlas(string filename) {
 			atlasNifti = new Nifti(filename,Application.dataPath + "/../data/");
 
-			CreateAtlasFromNifti ();
-			//vParams.ApplyTexture (atlas.texture);
+			CreateAtlasFromNifti (int.Parse(Util.getComboValue("cmbForceResolution")));
 
 		}
 
-        public void LoadFile() {
-            string filename = Util.getComboValue("drpSelectFile");
-            int forceValue = int.Parse(Util.getComboValue("cmbForceResolution"));
-			Nifti n = new Nifti(filename,Application.dataPath + "/../data/");
-
-            Vector3 scaleValues = n.findNewResolutionScale(forceValue);
-            
-            volTex = n.toTexture(scaleValues,false);
-			vParams.ApplyTexture (volTex.texture);
-//			TestDotTexture (atlas);
-
-        }
-
-        void Update()
-        {
-            UpdateCameraRotate(1);
-            cameraRotate = Vector3.left;
-            cameraRotate = Quaternion.AngleAxis(cameraPos.x, Vector3.up) * cameraRotate;
-            cameraRotate = Quaternion.AngleAxis(cameraPos.y, Vector3.Cross(cameraRotate, Vector3.up).normalized) * cameraRotate;
-            //            cameraRotate = Quaternion.Euler(0, cameraPos.y, 0) * Vector3.left;
-            vParams.rayCamera = cameraPos.z * cameraRotate;
-            // Debug.Log(cameraPos.z);
-			vParams.UpdateMaterials();
-
-            float t = Time.time * 1;
-            if (vParams.movingLight)
-                vParams.lightDir = new Vector3(Mathf.Cos(t), -0.1f, Mathf.Sin(t)).normalized;
-
-        }
     }
 
 }

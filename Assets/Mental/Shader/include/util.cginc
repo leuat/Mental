@@ -24,7 +24,7 @@
 	uniform float _ColorCutoff;
 	uniform float _ColorCutoffStrength;
 	uniform float _DotStrength;
-
+	uniform float3 _InternalScale;
 
 
 
@@ -101,11 +101,11 @@ float noise(float3 x)
 	}
 
 	inline float4 getTex(sampler3D tex, float3 pos) {
-		return  tex3D(tex, pos + float3(0.5, 0.5, 0.5));
+		return  tex3D(tex, pos*1.0/_InternalScale + float3(0.5, 0.5, 0.5));
 	}
 
 	inline float getI(float3 pos) {
-		return  length(tex3D(_VolumeTex, pos + float3(0.5, 0.5, 0.5)).xyz);
+		return  length(tex3D(_VolumeTex, pos*1.0/_InternalScale + float3(0.5, 0.5, 0.5)).xyz);
 	}
 
 	float3 saturateColors(float3 col) {

@@ -22,7 +22,7 @@ Shader "LemonSpawn/Ray Marching"
 #pragma multi_compile __ HAS_SHADOWS 
 #pragma multi_compile __ HAS_LIGHTING
 
-#define S 256
+#define S 192
 
 
 
@@ -73,9 +73,10 @@ Shader "LemonSpawn/Ray Marching"
 			r.Origin = camera;
 
 			AABB box;
-			box.Min = float3(-1, -1, -1) * 0.5;
-			box.Max = float3(1,1,1) * 0.5;
+			box.Min = float3(-1, -1, -1) * 0.5*_InternalScale;
+			box.Max = float3(1,1,1) * 0.5*_InternalScale;
 			float t0, t1;
+
 
 			float planeDir = 0;
 			float4 plane = renderPlane(r, float4(0.3, 0.6, 1.0, 1)*0.2, box, planeDir);

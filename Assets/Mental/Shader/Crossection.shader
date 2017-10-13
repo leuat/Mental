@@ -53,10 +53,14 @@ Shader "LemonSpawn/Crossection"
 
 				//float RayIntersectPlane(Ray ray, Ray plane, out float3 intersectionPoint)
 			float4 val = float4(0,0,0,0);
-
+			//_InternalScale.y*=10;
 			float3 isp;
+			float3 is = _InternalScale*0.5;
 			if (RayIntersectPlane(r, plane, isp)) {
-				isp = clamp(isp, -1,1);
+				isp.x = clamp(isp.x, -is.x,is.x);
+				isp.y = clamp(isp.y, -is.y,is.y);
+				isp.z = clamp(isp.z, -is.z,is.z);
+				
 				val = getTex(_VolumeTex, isp);
 			}
 			val.xyz*=val.a*6;
