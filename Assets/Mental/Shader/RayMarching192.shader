@@ -2,7 +2,7 @@
 
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "LemonSpawn/Ray Marching32"
+Shader "LemonSpawn/RayMarching192"
 {
 
 	CGINCLUDE
@@ -18,7 +18,7 @@ Shader "LemonSpawn/Ray Marching32"
 #pragma multi_compile __ HAS_SHADOWS 
 #pragma multi_compile __ HAS_LIGHTING
 
-#define S 32
+#define S 192
 
 #define TOTAL_STEPS S
 #define STEP_CNT S

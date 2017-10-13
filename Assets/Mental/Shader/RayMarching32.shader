@@ -2,7 +2,7 @@
 
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "LemonSpawn/Ray Marching32"
+Shader "LemonSpawn/RayMarching32"
 {
 
 	CGINCLUDE

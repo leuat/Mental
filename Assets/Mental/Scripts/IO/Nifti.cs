@@ -316,11 +316,11 @@ public class Nifti
 		dataType = getDataType ((int)header.datatype);
 		BytesPerPixel = header.bitpix / 8;
 
-		Debug.Log ("bpix:" + header.bitpix);
-		Debug.Log ("datatype:" + header.datatype);
+		//Debug.Log ("bpix:" + header.bitpix);
+		//Debug.Log ("datatype:" + header.datatype);
 		if (VerifyFeature ()) {
 			Allocate ();
-			Debug.Log ("File size should be " + (BytesPerPixel * size.x * size.y * size.z) / 1024 + " mb");
+			//Debug.Log ("File size should be " + (BytesPerPixel * size.x * size.y * size.z) / 1024 + " mb");
 			fs.Read (rawData, 0, (int)(size.x * size.y * size.z * BytesPerPixel));
 		} else
 			Debug.Log ("ERROR: File type " + dataType + " not yet supported aargh");

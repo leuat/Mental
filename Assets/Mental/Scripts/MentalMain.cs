@@ -6,6 +6,13 @@ using UnityEngine.UI;
 namespace LemonSpawn
 {
 
+    [System.Serializable]
+    public class Settings
+    {
+        public float version = 0.01f;
+    }
+
+
     public class MentalMain : MonoBehaviour
     {
 
@@ -15,7 +22,7 @@ namespace LemonSpawn
 
         // Use this for initialization
         public GameObject plane;
-
+        private Settings settings = new Settings();
 
         public void LoadFile()
         {
@@ -26,7 +33,7 @@ namespace LemonSpawn
             Vector3 scaleValues = n.findNewResolutionScale(forceValue);
 
             vMain.volTex = n.toTexture(scaleValues, false);
-            vParams.ApplyTexture(vMain.volTex.texture);
+            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
             //			TestDotTexture (atlas);
 
         }
@@ -35,13 +42,13 @@ namespace LemonSpawn
         public void Clip()
         {
             vMain.volTex.ClipData(vMain.atlas, 0);
-            vParams.ApplyTexture(vMain.volTex.texture);
+            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
         }
 
         public void ClipInverse()
         {
             vMain.volTex.ClipData(vMain.atlas, 1);
-            vParams.ApplyTexture(vMain.volTex.texture);
+            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
         }
 
         public void PopulateScrollView()
@@ -92,14 +99,13 @@ namespace LemonSpawn
             vMain = new VolumetricMain(plane, vParams);
             camrot = GetComponent<CameraRotator>();
 
-
             plane.GetComponent<Renderer>().material = vParams.rayMarchMat;
             camrot.cameraPos.z = 1.5f;
 
             Util.PopulateFileList("drpSelectFile", Application.dataPath + "/../data");
 
             vMain.volTex.CreateNoise(Vector3.one * 64, 3, 0);
-            vParams.ApplyTexture(vMain.volTex.texture);
+            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
 
             AnchorImage ai = new AnchorImage();
             StartCoroutine(ai.LoadFromUrl("http://cmbn-navigator.uio.no/navigator/feeder/preview/?id=33133", vMain.anchorMaterial));
@@ -109,8 +115,10 @@ namespace LemonSpawn
             PopulateScrollView();
             vParams.internalScale = new Vector3(1, 2, 1);
 
-
+            GameObject.Find("txtVersion").GetComponent<Text>().text = "Version " + settings.version;
+            UpdateShader();
         }
+
 
         public void ConstrainAtlas()
         {
@@ -118,6 +126,21 @@ namespace LemonSpawn
             vMain.CreateAtlasFromNifti(forceValue); 
 
         }
+
+        public void UpdateShader()
+        {
+            string val = GetComponent<UIManager>().getComboValue("drpRenderer");
+            string ShaderName = "LemonSpawn/RayMarching" + val;
+            //Debug.Log(ShaderName);
+            //vParams.rayMarchMat.shader = Shader.Find(ShaderName);
+
+            vParams.rayMarchMat = new Material(Shader.Find(ShaderName));
+
+            plane.GetComponent<Renderer>().material = vParams.rayMarchMat;
+            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
+        }
+
+
 
         private void UpdateParameters()
         {
@@ -145,16 +168,19 @@ namespace LemonSpawn
 
         }
 
+        public void TestDots()
+        {
+            vMain.TestDotTexture(vMain.atlas);
+
+        }
+
         // Update is called once per frame
         void Update()
         {
-
             if (camrot == null)
                 return;
 
-            //            cameraRotate = Quaternion.Euler(0, cameraPos.y, 0) * Vector3.left;
             vParams.rayCamera = camrot.cameraPos.z * camrot.cameraRotate;
-            // Debug.Log(cameraPos.z);
             vParams.UpdateMaterials();
 
             float t = Time.time * 1;

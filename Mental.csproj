@@ -138,7 +138,12 @@
     <None Include="Assets\Mental\Shader\Crossection.shader" />
     <None Include="Assets\Mental\Shader\MyShader.shader" />
     <None Include="Assets\Mental\Shader\RayMarching.shader" />
+    <None Include="Assets\Mental\Shader\RayMarching128.shader" />
+    <None Include="Assets\Mental\Shader\RayMarching192.shader" />
+    <None Include="Assets\Mental\Shader\RayMarching32.shader" />
+    <None Include="Assets\Mental\Shader\RayMarching64.shader" />
     <None Include="Assets\Mental\Shader\include\raymarching.cginc" />
+    <None Include="Assets\Mental\Shader\include\raymarchingBody.cginc" />
     <None Include="Assets\Mental\Shader\include\util.cginc" />
     <None Include="Assets\PostProcessing\Editor Resources\Monitors\HistogramCompute.compute" />
     <None Include="Assets\PostProcessing\Editor Resources\Monitors\HistogramRender.shader" />
