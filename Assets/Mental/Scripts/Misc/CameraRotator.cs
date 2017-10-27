@@ -11,11 +11,15 @@ namespace LemonSpawn
         public Vector3 cameraPos, cameraAdd, cameraRotate = new Vector3(0, 0, 1);
         public Vector3 rotatePlaneAdd, rotatePlane;
         public GameObject hitObject;
-
+        public GameObject extra;
         // Use this for initialization
         void Start()
         {
+            extra = new GameObject();
 
+            extra.transform.position = new Vector3(1, 0, 0);
+            extra.transform.LookAt(Vector3.zero);
+            
         }
 
         // Update is called once per frame
@@ -56,11 +60,14 @@ namespace LemonSpawn
             rotatePlaneAdd *= 0.8f;
             rotatePlane *= 0.8f;
 
-            cameraRotate = Vector3.left;
-            cameraRotate = Quaternion.AngleAxis(cameraPos.x, Vector3.up) * cameraRotate;
-            cameraRotate = Quaternion.AngleAxis(cameraPos.y, Vector3.Cross(cameraRotate, Vector3.up).normalized) * cameraRotate;
+            cameraPos.x *= 0.5f;
+            cameraPos.y *= 0.5f;
 
-            //            vParams.splitPlane = 
+            extra.transform.Rotate(transform.up, cameraPos.x);
+            extra.transform.Rotate(transform.right, cameraPos.y);
+//            Debug.Log(extra.transform.right);
+
+            cameraRotate = extra.transform.rotation*transform.localPosition.normalized;
 
         }
 

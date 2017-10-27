@@ -78,6 +78,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Mental\Scripts\ChunkReader.cs" />
     <Compile Include="Assets\Mental\Scripts\IO\ByteBuffer.cs" />
     <Compile Include="Assets\Mental\Scripts\IO\Nifti.cs" />
     <Compile Include="Assets\Mental\Scripts\IO\VolumetricTexture.cs" />
@@ -133,6 +134,32 @@
     <Compile Include="Assets\PostProcessing\Runtime\Utils\MaterialFactory.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Utils\RenderTextureFactory.cs" />
     <Compile Include="Assets\PostProcessing\Utilities\CustomMotionTexture\ExampleWheelController.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\BlockType.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\CompressionMode.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\CopyEncoder.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\Crc32Helper.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\DeflateInput.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\DeflaterManaged.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\DeflateStream.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\DeflateStreamAsyncResult.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\FastEncoder.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\FastEncoderStatics.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\FastEncoderWindow.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\FileFormats.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\GZipDecoder.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\GZipStream.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\GZipUtils.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\HuffmanTree.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\IDeflater.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\Inflater.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\InflaterState.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\InputBuffer.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\InvalidDataException.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\Match.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\MatchState.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\OutputBuffer.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\OutputWindow.cs" />
+    <Compile Include="Assets\Unity.IO.Compression\SR.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Mental\Shader\Crossection.shader" />
@@ -140,10 +167,12 @@
     <None Include="Assets\Mental\Shader\RayMarching.shader" />
     <None Include="Assets\Mental\Shader\RayMarching128.shader" />
     <None Include="Assets\Mental\Shader\RayMarching192.shader" />
+    <None Include="Assets\Mental\Shader\RayMarching256.shader" />
     <None Include="Assets\Mental\Shader\RayMarching32.shader" />
     <None Include="Assets\Mental\Shader\RayMarching64.shader" />
     <None Include="Assets\Mental\Shader\include\raymarching.cginc" />
     <None Include="Assets\Mental\Shader\include\raymarchingBody.cginc" />
+    <None Include="Assets\Mental\Shader\include\raymarchingDual.cginc" />
     <None Include="Assets\Mental\Shader\include\util.cginc" />
     <None Include="Assets\PostProcessing\Editor Resources\Monitors\HistogramCompute.compute" />
     <None Include="Assets\PostProcessing\Editor Resources\Monitors\HistogramRender.shader" />

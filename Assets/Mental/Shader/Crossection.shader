@@ -38,6 +38,7 @@ Shader "LemonSpawn/Crossection"
 		#include "include/util.cginc"
 		#include "include/raymarching.cginc"
 
+		uniform float2 _Scale2D;
 
 		half4 frag(v2f i) : COLOR{
 
@@ -55,15 +56,21 @@ Shader "LemonSpawn/Crossection"
 			float4 val = float4(0,0,0,0);
 			//_InternalScale.y*=10;
 			float3 isp;
-			float3 is = _InternalScale*0.5;
+			AABB box;
+			box.Min = float3(-1, -1, -1)*0.5*_InternalScaleData;
+			box.Max = float3(1,1,1)*0.5*_InternalScaleData;
+
+			float3 is = _InternalScaleData*0.5;
 			if (RayIntersectPlane(r, plane, isp)) {
-				isp.x = clamp(isp.x, -is.x,is.x);
+				/*isp.x = clamp(isp.x, -is.x,is.x);
 				isp.y = clamp(isp.y, -is.y,is.y);
 				isp.z = clamp(isp.z, -is.z,is.z);
+				*/
+				val = getTex(_VolumeTex, isp, _InternalScaleData);
+				val*=clamp(insideBox(isp, box),0,1);
 				
-				val = getTex(_VolumeTex, isp);
 			}
-			val.xyz*=val.a*6;
+			val.xyz*=val.a;
 //			val.a = 1;
 			val.xyz *= 2*_IntensityScale;
 			return val;

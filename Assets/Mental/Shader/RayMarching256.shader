@@ -1,10 +1,10 @@
-﻿
-// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "LemonSpawn/RayMarching128"
+Shader "LemonSpawn/RayMarching256"
 {
+
 
 	CGINCLUDE
 
@@ -19,7 +19,7 @@ Shader "LemonSpawn/RayMarching128"
 #pragma multi_compile __ HAS_SHADOWS 
 #pragma multi_compile __ HAS_LIGHTING
 
-#define S 128
+#define S 256
 
 #define TOTAL_STEPS S
 #define STEP_CNT S

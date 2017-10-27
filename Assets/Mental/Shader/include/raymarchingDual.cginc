@@ -1,4 +1,5 @@
 	//	uniform float _RenderType;
+
 	
 	float usign(float val) {
 		if (val>0)
@@ -22,21 +23,30 @@
 
 	}
 
+	uniform float _OuterOpacity;
 
 	half4 raymarchOpacity(float3 pos, float3 dir, AABB box)
 	{
 		float4 dst = 0;
 		float3 stepDist = dir * STEP_SIZE*1.25;
 		//float _Time = _LTime;
+		AABB halfBox = box;
+		halfBox.Min*=0.5;
+		halfBox.Max*=0.5;
 		for (int k = 0; k < STEP_CNT; k++)
 		{
 			float border = clipBorders(pos,box);
+			float borderDetail = clipBorders(pos,halfBox);
 /*			float3 shiftt = float3( cos(_LTime*100.4 + 10*noise(pos*4.12) ),
 									cos(_LTime*77.4 + 10*noise(pos*4.65) ),
 									sin(_LTime*112.3 + 10*noise(pos*3.23) ) ); */
 			
 //			float4 src = getTex(_VolumeTex, pos + 0.05*shiftt, _InternalScaleData)*border;
 			float4 src = getTex(_VolumeTex, pos, _InternalScaleData)*border;
+			src.a*=_OuterOpacity;
+			float4 src2 = getTex(_VolumeTexDetail, pos*2, _InternalScaleData)*borderDetail;
+			src = src*(1-borderDetail) + src2;
+
 //			float border = insideBox(pos, box);
 
 			float v = src.a;

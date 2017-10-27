@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,6 +15,8 @@ namespace LemonSpawn
     }
 
 
+ 
+
     public class MentalMain : MonoBehaviour
     {
 
@@ -23,32 +27,64 @@ namespace LemonSpawn
         // Use this for initialization
         public GameObject plane;
         private Settings settings = new Settings();
+        private Chunks chunks, chunksDetail;
+        private int currentResolution = 320*2;
+        private Vector3 currentPos = Vector3.zero;
+
+        public IEnumerator ImageLoadFromUrl(string s, Material m)
+        {
+            WWW www = new WWW(s);
+            //material = m;
+            yield return www;
+            Texture2D image = www.texture;
+            float alpha = 0.95f;
+            Util.SetTransparent(image, new Color(alpha, alpha, alpha, alpha));
+
+           // Apply();
+        }
+
+
 
         public void LoadFile()
         {
-            string filename = Util.getComboValue("drpSelectFile");
+            string filename = Util.getComboValue("drpSelectFileData");
             int forceValue = int.Parse(Util.getComboValue("cmbForceResolution"));
             Nifti n = new Nifti(filename, Application.dataPath + "/../data/");
 
             Vector3 scaleValues = n.findNewResolutionScale(forceValue);
 
+            vParams.internalScaleData = n.scaleValues;
+
             vMain.volTex = n.toTexture(scaleValues, false);
-            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
+            UpdateTextures();
             //			TestDotTexture (atlas);
 
         }
+
+        public void LoadAtlas()
+        {
+            string filename = Util.getComboValue("drpSelectFileAtlas");
+            Debug.Log(filename);
+            int forceValue = int.Parse(Util.getComboValue("cmbForceResolution"));
+            vMain.LoadAtlas(filename);
+            UpdateTextures();
+            PopulateScrollView();
+
+
+        }
+
 
 
         public void Clip()
         {
             vMain.volTex.ClipData(vMain.atlas, 0);
-            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
+            UpdateTextures();
         }
 
         public void ClipInverse()
         {
             vMain.volTex.ClipData(vMain.atlas, 1);
-            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
+            UpdateTextures();
         }
 
         public void PopulateScrollView()
@@ -61,6 +97,7 @@ namespace LemonSpawn
                 GameObject.Destroy(go.transform.GetChild(i).gameObject);
             }
 
+            if (vMain.atlasNifti!=null)
             foreach (KeyValuePair<int, Nifti.Label> e in vMain.atlasNifti.indexedColors)
             {
 
@@ -102,30 +139,125 @@ namespace LemonSpawn
             plane.GetComponent<Renderer>().material = vParams.rayMarchMat;
             camrot.cameraPos.z = 1.5f;
 
-            Util.PopulateFileList("drpSelectFile", Application.dataPath + "/../data");
+            Util.PopulateFileList("drpSelectFileData", Application.dataPath + "/../data", "nii");
+            Util.PopulateFileList("drpSelectFileAtlas", Application.dataPath + "/../data", "label");
 
             vMain.volTex.CreateNoise(Vector3.one * 64, 3, 0);
-            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
+            UpdateTextures();
 
             AnchorImage ai = new AnchorImage();
-            StartCoroutine(ai.LoadFromUrl("http://cmbn-navigator.uio.no/navigator/feeder/preview/?id=33133", vMain.anchorMaterial));
+            //StartCoroutine(ai.LoadFromUrl("http://cmbn-navigator.uio.no/navigator/feeder/preview/?id=33133", vMain.anchorMaterial));
 
-            vMain.LoadAtlas("WHS_SD_rat_atlas_v2.label");
+
 
             PopulateScrollView();
-            vParams.internalScale = new Vector3(1, 2, 1);
-
+ 
             GameObject.Find("txtVersion").GetComponent<Text>().text = "Version " + settings.version;
             UpdateShader();
+
+//            cr = this.gameObject.AddComponent<ChunkReader>();
+            //cr.getChunk("test");
+
+        }
+
+
+        private void UpdateTextures()
+        {
+            //if (chunks==null)
+                vParams.ApplyTexture(vMain.volTex.texture, vMain.volTexDetail.texture, vMain.atlas.texture);
+            /*else
+                vParams.ApplyTexture(chunks.volTex.texture, chunksDetail.volTex.texture, vMain.atlas.texture);
+                */
         }
 
 
         public void ConstrainAtlas()
         {
             int forceValue = int.Parse(GetComponent<UIManager>().getComboValue("cmbForceResolution"));
-            vMain.CreateAtlasFromNifti(forceValue); 
+            vMain.CreateAtlasFromNifti(forceValue);
+            UpdateTextures();
+
 
         }
+
+
+        private void OnApplicationQuit()
+        {
+            //Debug.Log("EEH");
+            if (chunks != null)
+                chunks.DestroyThreads();
+
+            if (chunksDetail != null)
+                chunksDetail.DestroyThreads();
+        }
+
+        public void LoadChunks()
+        {
+            string data = "https://neuroglancer.humanbrainproject.org/precomputed/BigBrainRelease.2015/8bit/";
+            string mu = currentResolution + "um/";
+            string muD = currentResolution/2 + "um/";
+            /*
+            string data = "https://neuroglancer.humanbrainproject.org/precomputed/WHS_SD_rat/templates/v1.01/t2star_masked/";
+
+            /*
+             *  For WHD
+             * 39um
+             * 78um
+             * 156um
+             * 312um
+             * */
+            /*
+           string mu = "320um/";
+           */
+
+            Vector3 pos = currentPos;
+
+//            Debug.Log("cp: " + mu + " - " + muD);
+
+            if (chunks == null)
+                chunks = new Chunks(vMain.volTex, Vector3.one * 64, Vector3.one * 64*4, pos, data, mu);
+
+            if (chunksDetail == null)
+                chunksDetail = new Chunks(vMain.volTexDetail, Vector3.one * 64, Vector3.one * 64 * 4, (2*pos) + Vector3.one*2, data, muD);
+
+            vParams.internalScaleData = Vector3.one;
+
+        }
+
+        private void FlipVolTex()
+        {
+            VolumetricTexture vt = vMain.volTex;
+            vMain.volTex = vMain.volTexDetail;
+            vMain.volTexDetail = vt;
+
+        }
+
+        public void ZoomLevels(int direction)
+        {
+            if (direction == 1)
+            {
+                FlipVolTex();
+                chunks = chunksDetail;
+                //chunks = null;
+                chunksDetail = null;
+                currentPos = (currentPos + Vector3.one)*2;
+                currentResolution /=2;
+                LoadChunks();
+ //               Debug.Log("Zooming IN");
+            }
+            if (direction == -1)
+            {
+                FlipVolTex();
+                chunksDetail = chunks;
+                chunks = null;
+                //chunksDetail = null;
+                currentPos = (currentPos/2)  - Vector3.one;
+                currentResolution *= 2;
+                LoadChunks();
+            }
+            UpdateTextures();
+        }
+
 
         public void UpdateShader()
         {
@@ -137,7 +269,7 @@ namespace LemonSpawn
             vParams.rayMarchMat = new Material(Shader.Find(ShaderName));
 
             plane.GetComponent<Renderer>().material = vParams.rayMarchMat;
-            vParams.ApplyTexture(vMain.volTex.texture, vMain.atlas.texture);
+            UpdateTextures();
         }
 
 
@@ -164,6 +296,8 @@ namespace LemonSpawn
 
             vParams.opacity = Util.getScrollValue("scrOpacity") * 4;
             vParams.Power = Util.getScrollValue("scrPower") * 4;
+            vParams.ColorCutoff = Util.getScrollValue("scrCCutoff") * 1;
+            vParams.ColorCutoffStrength = Util.getScrollValue("scrCStrength");
             ui.pnlParameters.SetActive(isa);
 
         }
@@ -175,13 +309,49 @@ namespace LemonSpawn
         }
 
         // Update is called once per frame
+
+
+        void UpdateChunks()
+        {
+            if (chunks != null)
+            {
+                if (chunks.Update())
+                {
+                    UpdateTextures();
+                }
+                if (chunksDetail.Update())
+                {
+                    UpdateTextures();
+                }
+
+                float cz = 0.75f;
+
+                if (camrot.cameraPos.z < cz)
+                {
+                    camrot.cameraPos.z += cz;
+                    ZoomLevels(1);
+                }
+                if (camrot.cameraPos.z > 2 * cz)
+                {
+                    camrot.cameraPos.z -= cz;
+                    ZoomLevels(-1);
+                }
+
+                float opacity = Mathf.Pow((camrot.cameraPos.z - cz) / cz, 2f);
+                vParams.rayMarchMat.SetFloat("_OuterOpacity", Mathf.Clamp(opacity, 0, 1));
+            }
+
+        }
+
         void Update()
         {
             if (camrot == null)
                 return;
 
             vParams.rayCamera = camrot.cameraPos.z * camrot.cameraRotate;
-            vParams.UpdateMaterials();
+            //vParams.rayCamera = Vector3.left * 3;
+//            Debug.Log("RAY camera: " + vParams.splitPlane);
+            vParams.UpdateMaterials(camrot.extra.transform.up);
 
             float t = Time.time * 1;
             if (vParams.movingLight)
@@ -190,6 +360,28 @@ namespace LemonSpawn
             vParams.splitPlane = camrot.getSplitPlane(vParams.splitPlane);
 
             UpdateParameters();
+            UpdateChunks();
+            if (Input.GetKeyUp(KeyCode.D))
+            {
+                chunks.MoveChunks(new Vector3(1, 0, 0));
+                chunksDetail.MoveChunks(new Vector3(1, 0, 0)*2);
+            }
+            if (Input.GetKeyUp(KeyCode.A))
+            {
+                chunks.MoveChunks(new Vector3(-1, 0, 0));
+                chunksDetail.MoveChunks(new Vector3(-1, 0, 0)*2);
+            }
+
+            if (Input.GetKeyUp(KeyCode.W))
+            {
+                chunks.MoveChunks(new Vector3(0, -1, 0));
+                chunksDetail.MoveChunks(new Vector3(0, -1, 0)*2);
+            }
+            if (Input.GetKeyUp(KeyCode.S))
+            {
+                chunks.MoveChunks(new Vector3(0, 1, 0));
+                chunksDetail.MoveChunks(new Vector3(0, 1, 0)*2);
+            }
 
         }
     }

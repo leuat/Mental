@@ -8,9 +8,10 @@ public class VolumetricTexture
 {
 	public Texture3D texture;
 	public Vector3 size = Vector3.zero;
+    public Color32[] cols;
 
 
-	public VolumetricTexture ()
+    public VolumetricTexture ()
 	{
 
 	}
@@ -18,7 +19,7 @@ public class VolumetricTexture
 	public VolumetricTexture (Vector3 s)
 	{
 		size = s;
-		cols = new Color[(int)(size.x * size.y * size.z)];
+        InitializeCols();
 
 	}
 
@@ -79,9 +80,16 @@ public class VolumetricTexture
         }
         */
 
+    public void InitializeCols()
+    {
+        cols = new Color32[(int)(size.x * size.y * size.z)];
+
+    }
+
 	public void CreateTexture ()
 	{
 		texture = new Texture3D ((int)size.x, (int)size.y, (int)size.z, TextureFormat.ARGB32, true);
+        texture.wrapMode = TextureWrapMode.Clamp;
 	}
 
 	public void fromByteArray (byte[] bytes)
@@ -96,10 +104,10 @@ public class VolumetricTexture
 			c.a = c.r;
 			cols [i] = c;
 		}
-		texture.SetPixels (cols);
-		texture.Apply ();
+        Apply();
 
 	}
+
 
 
 
@@ -151,8 +159,7 @@ public class VolumetricTexture
 
 			}
 		}
-		texture.SetPixels (cols);
-		texture.Apply ();
+        Apply();
 
 	}
 
@@ -178,8 +185,7 @@ public class VolumetricTexture
 					cols [i].a = cols [i].r;
 
 			}
-		texture.SetPixels (cols);
-		texture.Apply ();
+        Apply();
 
 	}
 
@@ -189,7 +195,8 @@ public class VolumetricTexture
 		size = s;
 		texture = new Texture3D ((int)size.x, (int)size.y, (int)size.z, TextureFormat.ARGB32, true);
 		Vector3 cs = new Vector3 (0.856f, 1.234f, 2.3f) * scale;
-		cols = new Color[(int)(size.x * size.y * size.z)];
+        //cols = new Color[(int)(size.x * size.y * size.z)];
+        InitializeCols();
 		Color c = new Color (1.0f, 0.7f, 0.2f, 1.0f);
 		for (int i = 0; i < size.x; i++)
 			for (int j = 0; j < size.y; j++)
@@ -210,13 +217,11 @@ public class VolumetricTexture
 					setColor (i, j, k, c*amp);
 
 				}
-					
-		texture.SetPixels (cols);
-		texture.Apply ();
+        Apply();
 
 	}
 
-	private void setColor (int x, int y, int z, Color c)
+	public void setColor (int x, int y, int z, Color c)
 	{
 		if (x < 0 || x >= size.x)
 			return;
@@ -224,11 +229,18 @@ public class VolumetricTexture
 			return;
 		if (z < 0 || z >= size.z)
 			return;
+            
 		//            cols[x * size * size + (size-1-y) * size + z] = c;
 		cols [(int)(x * size.z * size.y + (y) * size.x + z)] = c;
 	}
 
-	public Color getColor (int x, int y, int z)
+    public void Apply()
+    {
+        texture.SetPixels32(cols);
+        texture.Apply();
+    }
+
+    public Color getColor (int x, int y, int z)
 	{
 		if (x < 0 || x >= size.x)
 			return Color.black;
@@ -269,7 +281,6 @@ public class VolumetricTexture
 
         }
         */
-	Color[] cols;
 
 	/*    public void CreateGrass(int N, int Count)
         {
@@ -298,6 +309,6 @@ public class VolumetricTexture
         }
         */
 
-
+    
 
 }

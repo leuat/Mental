@@ -1,7 +1,7 @@
 
 
 		#include "include/util.cginc"
-		#include "include/raymarching.cginc"
+		#include "include/raymarchingDual.cginc"
 
 
 
@@ -28,13 +28,13 @@
 			r.Origin = camera;
 
 			AABB box;
-			box.Min = float3(-1, -1, -1) * 0.5*_InternalScale;
-			box.Max = float3(1,1,1) * 0.5*_InternalScale;
+			box.Min = float3(-1, -1, -1)*0.5*_InternalScaleData;
+			box.Max = float3(1,1,1)*0.5*_InternalScaleData;
 			float t0, t1;
 
 
 			float planeDir = 0;
-			float4 plane = renderPlane(r, float4(0.3, 0.6, 1.0, 1)*0.2, box, planeDir);
+			float4 plane = renderPlane(r, float4(0.3, 0.6, 1.0, 0.7)*0.2, box, planeDir);
 			float4 val = float4(0,0,0,0);
 			if (IntersectBox(r, box, t0, t1)) {
 				float3 opos = float3(0,0,0);

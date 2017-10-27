@@ -25,12 +25,16 @@ Shader "LemonSpawn/Ray Marching32"
 #define STEP_SIZE 1 / S
 
 
+
+
 	ENDCG
 Subshader{
+
 		//ZTest Always Cull Off ZWrite Off
 		Fog{ Mode off }
 
 		Pass
+
 		{
 			CGPROGRAM
 			#pragma vertex vert

@@ -20,6 +20,8 @@ public class Nifti
 		public Vector3 extra;
 		public bool toggle;
 
+        public float maxval;
+
 		public Label (int i, string n, Vector3 c, Vector3 e)
 		{
 			extra = e;
@@ -415,8 +417,22 @@ public class Nifti
 						data [3 * p + 1] = (byte)(val / 256);
 						data [3 * p + 2] = (byte)(val / 256);
 					}
+                    
+                   if (dataType == DataType.DT_SIGNED_SHORT)
+                    {
+                        short val = (short)(((rawData[2 * idx + 1]) << 8) | (rawData[2 * idx + 0]));
+                        short s = 2;
+                        c1 = (byte)(val / s);
+                        c2 = (byte)(val / s);
+                        c3 = (byte)(val / s);
 
-					p++;
+                        data[3 * p + 0] = c1;
+                        data[3 * p + 1] = c2;
+                        data[3 * p + 2] = c3;
+
+                    }
+
+                    p++;
 				}
 		Nifti vt = new Nifti (newSize);
 		vt.rawData = data;
@@ -425,7 +441,7 @@ public class Nifti
 
 	public bool VerifyFeature ()
 	{
-		if (dataType == DataType.DT_RGB || dataType == DataType.DT_UINT16 || dataType == DataType.DT_FLOAT)
+		if (dataType == DataType.DT_RGB || dataType == DataType.DT_UINT16 || dataType == DataType.DT_FLOAT || dataType == DataType.DT_SIGNED_SHORT)
 			return true;
 
 		return false;
@@ -491,6 +507,7 @@ public class Nifti
 	public Vector3 size = new Vector3 (1, 1, 1);
 	public byte[] rawData;
 
+    public Vector3 scaleValues = Vector3.one;
 
 	public Vector3 findNewResolutionScale (int forceValue)
 	{
@@ -500,7 +517,18 @@ public class Nifti
 		val.y = Mathf.Max ((int)(size.y / forceValue), 1);
 		val.z = Mathf.Max ((int)(size.z / forceValue), 1);
 
-		return val;
+        int min = (int)Mathf.Min(size.x, size.y);
+        min = (int)Mathf.Min(min, size.z);
+
+        scaleValues = size / (float)min;
+
+/*        Debug.Log(forceValue);
+        Debug.Log(val);
+        Debug.Log(size);
+        */
+
+
+        return val;
 	}
 
 

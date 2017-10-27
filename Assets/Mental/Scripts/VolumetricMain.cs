@@ -55,14 +55,20 @@ namespace LemonSpawn
         [Range(0, 1)]
         public float ColorCutoff = 0;
         [SerializeField]
-        [Range(0, 1)]
+        [Range(0, 0.15f)]
         public float ColorCutoffStrength = 0;
         [SerializeField]
         [Range(0, 1)]
         public float DotStrength = 1;
 
         public Material rayMarchMat;
-        public Material CrossectionMat;
+        /*        public Material CrossectionMatX;
+                public Material CrossectionMatY;
+                public Material CrossectionMatZ;
+                */
+        public GameObject CrossectionMatX;
+        public GameObject CrossectionMatY;
+        public GameObject CrossectionMatZ;
 
         private Matrix4x4 ViewMat;
         public Vector3 splitPlane = new Vector3(1, 0, 0);
@@ -73,7 +79,8 @@ namespace LemonSpawn
 
         public Vector3 lightDir = new Vector3(1, 1, 0).normalized;
 
-        public Vector3 internalScale = Vector3.one;
+        public Vector3 internalScaleData = Vector3.one;
+        public Vector3 internalScaleAtlas = Vector3.one;
 
         public GameObject prefabButton;
 
@@ -114,10 +121,27 @@ namespace LemonSpawn
 		 * */
 
 
-        public void UpdateMaterials()
+        private void SetCrossSectionMat(GameObject go, Vector3 camera, Vector3 up)
+        {
+            Material m = go.GetComponent<Renderer>().material;
+            Matrix4x4 mat = Matrix4x4.LookAt(splitPos, camera, up);
+        
+            m.SetVector("_SplitPlane", splitPlane);
+            m.SetVector("_SplitPos", splitPos);
+            m.SetMatrix("_ViewMatrix", mat);
+            m.SetFloat("_Perspective", 50);
+            m.SetVector("_Camera", camera);
+            m.SetFloat("_IntensityScale", IntensityScale);
+            m.SetVector("_InternalScaleData", internalScaleData);
+            m.SetVector("_SplitPlane", (-camera).normalized);
+            Vector2 scale = new Vector3(go.transform.localScale.x, go.transform.localScale.z);
+            m.SetVector("_Scale2D", scale);
+        }
+
+        public void UpdateMaterials(Vector3 up)
         {
             //            ViewMat = Matrix4x4.LookAt(rayCamera, rayTarget, Vector3.up);
-            ViewMat = Matrix4x4.LookAt(rayTarget, rayCamera, Vector3.up);
+            ViewMat = Matrix4x4.LookAt(rayTarget, rayCamera, up);
             rayMarchMat.SetMatrix("_ViewMatrix", ViewMat);
             rayMarchMat.SetFloat("_Perspective", FOV);
             rayMarchMat.SetVector("_Camera", rayCamera);
@@ -131,6 +155,14 @@ namespace LemonSpawn
             float d = Vector3.Dot(splitPos, splitPlane);
             splitPos = splitPlane.normalized * d;
 
+
+            Vector3 crossCameraPos = splitPlane.normalized;
+            ViewMat = Matrix4x4.LookAt(splitPos, crossCameraPos, up);
+
+            SetCrossSectionMat(CrossectionMatX, crossCameraPos*2 + splitPos, up);
+            SetCrossSectionMat(CrossectionMatY, Util.ViewMatrixUp(ViewMat)*2 + splitPos, Util.ViewMatrixLeft(ViewMat));
+            SetCrossSectionMat(CrossectionMatZ, Util.ViewMatrixLeft(ViewMat) * 2 + splitPos, Util.ViewMatrixUp(ViewMat));
+
             rayMarchMat.SetVector("_SplitPos", splitPos);
             rayMarchMat.SetFloat("_Cutoff", cutoff);
             rayMarchMat.SetFloat("_Shininess", shininess);
@@ -140,39 +172,35 @@ namespace LemonSpawn
 
             rayMarchMat.SetFloat("_IntensityScale", IntensityScale);
             rayMarchMat.SetFloat("_Power", Power);
+            rayMarchMat.SetFloat("_LTime", Time.time*0.01f);
 
             // CrossectionMat
 
-            CrossectionMat.SetVector("_SplitPlane", splitPlane);
-            CrossectionMat.SetVector("_SplitPos", splitPos);
-            /*			Quaternion q = Quaternion.FromToRotation (Vector3.up, splitPlane);
-			Matrix4x4 mat = Matrix4x4.TRS (Vector3.zero, q, Vector3.one);
-			CrossectionMat.SetMatrix ("_planeMatrix", mat);
-*/
-            Vector3 cam = 2 * splitPlane + splitPos;
-            ViewMat = Matrix4x4.LookAt(splitPos, cam, Vector3.up);
 
-            CrossectionMat.SetMatrix("_ViewMatrix", ViewMat);
-            CrossectionMat.SetFloat("_Perspective", 50);
-            CrossectionMat.SetVector("_Camera", cam);
-            CrossectionMat.SetFloat("_IntensityScale", IntensityScale);
 
 
             rayMarchMat.SetFloat("_ColorCutoff", ColorCutoff);
             rayMarchMat.SetFloat("_ColorCutoffStrength", ColorCutoffStrength);
             rayMarchMat.SetFloat("_DotStrength", DotStrength);
 
-            rayMarchMat.SetVector("_InternalScale", internalScale);
-            CrossectionMat.SetVector("_InternalScale", internalScale);
+
+            //Debug.Log(internalScaleAtlas);
+
+            rayMarchMat.SetVector("_InternalScaleData", internalScaleData);
+            rayMarchMat.SetVector("_InternalScaleAtlas", internalScaleAtlas);
 
 
             UpdateKeywords();
         }
 
-        public void ApplyTexture(Texture3D texture, Texture3D atlas)
+
+        public void ApplyTexture(Texture3D texture, Texture3D textureDetail, Texture3D atlas)
         {
             rayMarchMat.SetTexture("_VolumeTex", texture);
-            CrossectionMat.SetTexture("_VolumeTex", texture);
+            rayMarchMat.SetTexture("_VolumeTexDetail", textureDetail);
+            CrossectionMatX.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
+            CrossectionMatY.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
+            CrossectionMatZ.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
             rayMarchMat.SetTexture("_VolumeTexDots", atlas);
 
         }
@@ -191,18 +219,7 @@ namespace LemonSpawn
 
 
 
-        public IEnumerator LoadFromUrl(string s, Material m)
-        {
-            WWW www = new WWW(s);
-            material = m;
-            yield return www;
-            image = www.texture;
-            float alpha = 0.95f;
-            Util.SetTransparent(image, new Color(alpha, alpha, alpha, alpha));
-
-            Apply();
-        }
-
+        
         public void Apply()
         {
             //material.SetTexture ("_MainTex", image); 
@@ -224,12 +241,13 @@ namespace LemonSpawn
         }
 
         public VolumetricTexture volTex = new VolumetricTexture();
+        public VolumetricTexture volTexDetail = new VolumetricTexture();
         public VolumetricTexture atlas = new VolumetricTexture();
 
         public Material anchorMaterial;
         public Nifti atlasNifti;
 
-        public Vector3 atlasScaleValues;
+//        public Vector3 atlasScaleValues;
 
         void Start()
         {
@@ -239,6 +257,7 @@ namespace LemonSpawn
         public void CreateAtlasFromNifti(int forceValue)
         {
             Vector3 scaleValues = atlasNifti.findNewResolutionScale(forceValue);
+
 
             atlas = atlasNifti.toTexture(scaleValues, true);
 
@@ -260,6 +279,8 @@ namespace LemonSpawn
             atlasNifti = new Nifti(filename, Application.dataPath + "/../data/");
 
             CreateAtlasFromNifti(int.Parse(Util.getComboValue("cmbForceResolution")));
+            vParams.internalScaleAtlas = atlasNifti.scaleValues;
+//            Debug.Log(vParams.internalScaleAtlas);
 
         }
 

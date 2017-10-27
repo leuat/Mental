@@ -6,6 +6,7 @@
 
 	sampler3D _VolumeTex;
 	sampler3D _VolumeTexDots;
+	sampler3D _VolumeTexDetail;
 	float _Opacity;
 
 	uniform float4x4 _ViewMatrix;
@@ -24,7 +25,9 @@
 	uniform float _ColorCutoff;
 	uniform float _ColorCutoffStrength;
 	uniform float _DotStrength;
-	uniform float3 _InternalScale;
+	uniform float3 _InternalScaleAtlas;
+	uniform float3 _InternalScaleData;
+	uniform float _LTime;
 
 
 
@@ -100,12 +103,12 @@ float noise(float3 x)
 		return s.x * s.y*s.z;
 	}
 
-	inline float4 getTex(sampler3D tex, float3 pos) {
-		return  tex3D(tex, pos*1.0/_InternalScale + float3(0.5, 0.5, 0.5));
+	inline float4 getTex(sampler3D tex, float3 pos, float3 scale) {
+		return  tex3D(tex, pos*1.0/scale + float3(0.5, 0.5, 0.5));
 	}
 
-	inline float getI(float3 pos) {
-		return  length(tex3D(_VolumeTex, pos*1.0/_InternalScale + float3(0.5, 0.5, 0.5)).xyz);
+	inline float getI(float3 pos, float3 scale) {
+		return  length(tex3D(_VolumeTex, pos*1.0/scale + float3(0.5, 0.5, 0.5)).xyz);
 	}
 
 	float3 saturateColors(float3 col) {
@@ -123,9 +126,9 @@ float noise(float3 x)
 		float3 x = float3(1, 0, 0);
 		float3 y = float3(0, 1, 0);
 		float3 z = float3(0, 0, 1);
-		float3 N = float3((getI(pos - d*x) - getI(pos + d*x)),
-			(getI(pos - d*y) - getI(pos + d*y)),
-			(getI(pos - d*z) - getI(pos + d*z)));
+		float3 N = float3((getI(pos - d*x, _InternalScaleData) - getI(pos + d*x,_InternalScaleData)),
+			(getI(pos - d*y,_InternalScaleData) - getI(pos + d*y,_InternalScaleData)),
+			(getI(pos - d*z,_InternalScaleData) - getI(pos + d*z,_InternalScaleData)));
 		return normalize(N);
 
 	}
@@ -133,6 +136,7 @@ float noise(float3 x)
 	float pointPlane(float3 pos, float3 planePos, float3 planeNormal) {
 		float3 p = planePos - pos;
 		return clamp(-dot(p, planeNormal), 0, 1);
+		//return -dot(p, planeNormal);
 	}
 
 
@@ -141,7 +145,7 @@ float noise(float3 x)
 		float step = 0.05;
 		for (int i = 0; i < 10; i++) {
 			float3 p = pos + _LightDir * 1 * step;
-			l = l - getTex(_VolumeTex, p).a*0.4*pointPlane(p, _SplitPos, _SplitPlane);;
+			l = l - getTex(_VolumeTex, p, _InternalScaleData).a*0.4*pointPlane(p, _SplitPos, _SplitPlane);;
 		}
 
 		return clamp(l, 0.25, 1);

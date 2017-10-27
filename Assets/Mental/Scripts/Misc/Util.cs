@@ -531,9 +531,9 @@ public class Util : MonoBehaviour
             return 0;
     }
 
-	public static void PopulateFileList(string dropbox, string path)
+	public static void PopulateFileList(string dropbox, string path, string fileType)
 	{
-		Dropdown cbx = GameObject.Find("drpSelectFile").GetComponent<Dropdown>();
+		Dropdown cbx = GameObject.Find(dropbox).GetComponent<Dropdown>();
 		cbx.ClearOptions();
 		DirectoryInfo info = new DirectoryInfo(Application.dataPath + "/../data");
 		if (!info.Exists)
@@ -541,7 +541,7 @@ public class Util : MonoBehaviour
 			UnityEngine.Debug.Log("Could not find data directory : " + path);
 			return;
 		}
-		FileInfo[] fileInfo = info.GetFiles();
+		FileInfo[] fileInfo = info.GetFiles("*."+ fileType);
 		List<Dropdown.OptionData> data = new List<Dropdown.OptionData>();
 		foreach (FileInfo f in fileInfo)
 		{
@@ -1139,6 +1139,8 @@ public class Util : MonoBehaviour
 
 	public static void SetTransparent(Texture2D tex, Color alpha) {
 		Color[] cols = tex.GetPixels ();
+        if (cols == null)
+            return;
 		for (int i = 0; i < cols.Length; i++) {
 			Color c = cols [i];
 			if (c.r > alpha.r && c.g> alpha.g && c.b > alpha.b) {
@@ -1160,5 +1162,36 @@ public class Util : MonoBehaviour
         Renderer r = go.GetComponent<Renderer>();
         if (r != null)
             r.material = newMat;
+    }
+
+
+    public static Vector3 ViewMatrixLeft(Matrix4x4 viewMatrix)
+    {
+        return -ViewMatrixRight(viewMatrix);
+    }
+
+    public static Vector3 ViewMatrixRight(Matrix4x4 viewMatrix)
+    {
+        return new Vector3(viewMatrix.m11, viewMatrix.m21, viewMatrix.m31);
+    }
+
+    public static Vector3 ViewMatrixUp(Matrix4x4 viewMatrix)
+    {
+        return new Vector3(viewMatrix.m12, viewMatrix.m22, viewMatrix.m33);
+    }
+
+    public static Vector3 ViewMatrixDown(Matrix4x4 viewMatrix)
+    {
+        return -ViewMatrixUp(viewMatrix);
+    }
+
+    public static Vector3 ViewMatrixForward(Matrix4x4 viewMatrix)
+    {
+        return -ViewMatrixBackward(viewMatrix);
+    }
+
+    public static Vector3 ViewMatrixBackward(Matrix4x4 viewMatrix)
+    {
+        return new Vector3(viewMatrix.m13, viewMatrix.m23, viewMatrix.m33);
     }
 }
