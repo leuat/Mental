@@ -123,7 +123,13 @@ namespace LemonSpawn
 
         private void SetCrossSectionMat(GameObject go, Vector3 camera, Vector3 up)
         {
+            if (go == null)
+                return;
+            if (go.GetComponent<Renderer>() == null)
+                return;
             Material m = go.GetComponent<Renderer>().material;
+            if (m == null)
+                return;
             Matrix4x4 mat = Matrix4x4.LookAt(splitPos, camera, up);
         
             m.SetVector("_SplitPlane", splitPlane);
@@ -138,7 +144,16 @@ namespace LemonSpawn
             m.SetVector("_Scale2D", scale);
         }
 
-        public void UpdateMaterials(Vector3 up)
+        public void UpdateMaterials(Vector3 up, Material mat, Quaternion q)
+        {
+            Material m = rayMarchMat;
+            rayMarchMat = m;
+            UpdateMaterials(up, q);
+            rayMarchMat = m;
+        }
+
+
+        public void UpdateMaterials(Vector3 up, Quaternion q)
         {
             //            ViewMat = Matrix4x4.LookAt(rayCamera, rayTarget, Vector3.up);
             ViewMat = Matrix4x4.LookAt(rayTarget, rayCamera, up);
@@ -146,14 +161,14 @@ namespace LemonSpawn
             rayMarchMat.SetFloat("_Perspective", FOV);
             rayMarchMat.SetVector("_Camera", rayCamera);
             rayMarchMat.SetVector("_CameraDirection", (rayCamera - rayTarget).normalized);
-            rayMarchMat.SetVector("_LightDir", lightDir);
+            rayMarchMat.SetVector("_LightDir", q*lightDir);
 
-            rayMarchMat.SetVector("_SplitPlane", splitPlane);
+            rayMarchMat.SetVector("_SplitPlane", q*splitPlane);
             // Make sure point is always closest to origin
 
-            splitPos = new Vector3(splitPosX, splitPosY, splitPosZ);
-            float d = Vector3.Dot(splitPos, splitPlane);
-            splitPos = splitPlane.normalized * d;
+            splitPos = q*new Vector3(splitPosX, splitPosY, splitPosZ);
+            float d = Vector3.Dot(splitPos, q*splitPlane);
+            splitPos = q*splitPlane.normalized * d;
 
 
             Vector3 crossCameraPos = splitPlane.normalized;
@@ -194,13 +209,65 @@ namespace LemonSpawn
         }
 
 
+        public void UpdateMaterialFromMatrix(Matrix4x4 vm, float fov)
+        {
+            //            ViewMat = Matrix4x4.LookAt(rayCamera, rayTarget, Vector3.up);
+            ViewMat = vm;
+            rayMarchMat.SetMatrix("_ViewMatrix", ViewMat);
+            rayMarchMat.SetFloat("_Perspective", fov);
+            rayMarchMat.SetVector("_Camera", rayCamera);
+            rayMarchMat.SetVector("_CameraDirection", (rayCamera - rayTarget).normalized);
+            rayMarchMat.SetVector("_LightDir", lightDir);
+
+            rayMarchMat.SetVector("_SplitPlane", splitPlane);
+            // Make sure point is always closest to origin
+
+            splitPos = new Vector3(splitPosX, splitPosY, splitPosZ);
+            float d = Vector3.Dot(splitPos, splitPlane);
+            splitPos = splitPlane.normalized * d;
+
+
+
+            rayMarchMat.SetVector("_SplitPos", splitPos);
+            rayMarchMat.SetFloat("_Cutoff", cutoff);
+            rayMarchMat.SetFloat("_Shininess", shininess);
+            rayMarchMat.SetVector("_InteractColor", interactColor);
+            rayMarchMat.SetFloat("_Opacity", opacity); // Blending strength 
+            rayMarchMat.SetFloat("_Saturation", saturation);
+
+            rayMarchMat.SetFloat("_IntensityScale", IntensityScale);
+            rayMarchMat.SetFloat("_Power", Power);
+            rayMarchMat.SetFloat("_LTime", Time.time * 0.01f);
+
+            // CrossectionMat
+            rayMarchMat.SetFloat("_ColorCutoff", ColorCutoff);
+            rayMarchMat.SetFloat("_ColorCutoffStrength", ColorCutoffStrength);
+            rayMarchMat.SetFloat("_DotStrength", DotStrength);
+
+
+            //Debug.Log(internalScaleAtlas);
+
+            rayMarchMat.SetVector("_InternalScaleData", internalScaleData);
+            rayMarchMat.SetVector("_InternalScaleAtlas", internalScaleAtlas);
+
+
+            UpdateKeywords();
+        }
+
         public void ApplyTexture(Texture3D texture, Texture3D textureDetail, Texture3D atlas)
         {
+            if (rayMarchMat == null)
+                return;
+            
             rayMarchMat.SetTexture("_VolumeTex", texture);
             rayMarchMat.SetTexture("_VolumeTexDetail", textureDetail);
-            CrossectionMatX.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
-            CrossectionMatY.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
-            CrossectionMatZ.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
+            
+            if (CrossectionMatX != null)
+            {
+                CrossectionMatX.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
+                CrossectionMatY.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
+                CrossectionMatZ.GetComponent<Renderer>().material.SetTexture("_VolumeTex", texture);
+            }
             rayMarchMat.SetTexture("_VolumeTexDots", atlas);
 
         }
@@ -231,14 +298,21 @@ namespace LemonSpawn
     public class VolumetricMain
     {
         private VolumetricParams vParams;
-        private GameObject plane;
+//        private GameObject plane;
 
         public VolumetricMain(GameObject pl, VolumetricParams vp)
         {
             vParams = vp;
-            plane = pl;
+//            plane = pl;
 
         }
+
+        public VolumetricMain(VolumetricParams vp)
+        {
+            vParams = vp;
+
+        }
+
 
         public VolumetricTexture volTex = new VolumetricTexture();
         public VolumetricTexture volTexDetail = new VolumetricTexture();

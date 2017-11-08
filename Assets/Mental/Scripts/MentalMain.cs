@@ -163,11 +163,11 @@ namespace LemonSpawn
 
         private void UpdateTextures()
         {
-            //if (chunks==null)
-                vParams.ApplyTexture(vMain.volTex.texture, vMain.volTexDetail.texture, vMain.atlas.texture);
-            /*else
+            if (chunks == null)
+                vParams.ApplyTexture(vMain.volTex.texture, vMain.volTex.texture, vMain.atlas.texture);
+            else
                 vParams.ApplyTexture(chunks.volTex.texture, chunksDetail.volTex.texture, vMain.atlas.texture);
-                */
+                
         }
 
 
@@ -191,9 +191,15 @@ namespace LemonSpawn
                 chunksDetail.DestroyThreads();
         }
 
+        public string dataSource = "";
+
         public void LoadChunks()
         {
-            string data = "https://neuroglancer.humanbrainproject.org/precomputed/BigBrainRelease.2015/8bit/";
+            //string data = "https://neuroglancer.humanbrainproject.org/precomputed/BigBrainRelease.2015/8bit/";
+
+            if (dataSource == "")
+                dataSource = Util.getComboValue("drpSelectDataSource");
+            
             string mu = currentResolution + "um/";
             string muD = currentResolution/2 + "um/";
             /*
@@ -212,13 +218,15 @@ namespace LemonSpawn
 
             Vector3 pos = currentPos;
 
-//            Debug.Log("cp: " + mu + " - " + muD);
+            //            Debug.Log("cp: " + mu + " - " + muD);
+
+            int scale = 2;
 
             if (chunks == null)
-                chunks = new Chunks(vMain.volTex, Vector3.one * 64, Vector3.one * 64*4, pos, data, mu);
+                chunks = new Chunks(Vector3.one * 64, Vector3.one * 64*scale, pos, dataSource, mu);
 
             if (chunksDetail == null)
-                chunksDetail = new Chunks(vMain.volTexDetail, Vector3.one * 64, Vector3.one * 64 * 4, (2*pos) + Vector3.one*2, data, muD);
+                chunksDetail = new Chunks(Vector3.one * 64, Vector3.one * 64 * scale, (2*pos) + Vector3.one, dataSource, muD);
 
             vParams.internalScaleData = Vector3.one;
 
@@ -236,22 +244,22 @@ namespace LemonSpawn
         {
             if (direction == 1)
             {
-                FlipVolTex();
+                //FlipVolTex();
                 chunks = chunksDetail;
                 //chunks = null;
                 chunksDetail = null;
-                currentPos = (currentPos + Vector3.one)*2;
+                currentPos = (2*currentPos + Vector3.one);
                 currentResolution /=2;
                 LoadChunks();
  //               Debug.Log("Zooming IN");
             }
             if (direction == -1)
             {
-                FlipVolTex();
+                //FlipVolTex();
                 chunksDetail = chunks;
                 chunks = null;
                 //chunksDetail = null;
-                currentPos = (currentPos/2)  - Vector3.one;
+                currentPos = (currentPos  - Vector3.one)/2;
                 currentResolution *= 2;
                 LoadChunks();
             }
@@ -343,6 +351,16 @@ namespace LemonSpawn
 
         }
 
+        private void Move(Vector3 v)
+        {
+            if (chunks == null)
+                return;
+            chunks.MoveChunks(v);
+            chunksDetail.MoveChunks(2*v);
+            currentPos += v;
+
+        }
+
         void Update()
         {
             if (camrot == null)
@@ -351,7 +369,7 @@ namespace LemonSpawn
             vParams.rayCamera = camrot.cameraPos.z * camrot.cameraRotate;
             //vParams.rayCamera = Vector3.left * 3;
 //            Debug.Log("RAY camera: " + vParams.splitPlane);
-            vParams.UpdateMaterials(camrot.extra.transform.up);
+            vParams.UpdateMaterials(camrot.extra.transform.up, Quaternion.identity);
 
             float t = Time.time * 1;
             if (vParams.movingLight)
@@ -361,27 +379,24 @@ namespace LemonSpawn
 
             UpdateParameters();
             UpdateChunks();
-            if (Input.GetKeyUp(KeyCode.D))
+            int m = 2;
+
+            if (Input.GetKeyUp(KeyCode.R))
             {
-                chunks.MoveChunks(new Vector3(1, 0, 0));
-                chunksDetail.MoveChunks(new Vector3(1, 0, 0)*2);
-            }
-            if (Input.GetKeyUp(KeyCode.A))
-            {
-                chunks.MoveChunks(new Vector3(-1, 0, 0));
-                chunksDetail.MoveChunks(new Vector3(-1, 0, 0)*2);
+                chunks = null;
+                chunksDetail = null;
+                LoadChunks();
             }
 
+            if (Input.GetKeyUp(KeyCode.D))
+                Move(new Vector3(1, 0, 0));
+            if (Input.GetKeyUp(KeyCode.A))
+                Move(new Vector3(-1, 0, 0));
+
             if (Input.GetKeyUp(KeyCode.W))
-            {
-                chunks.MoveChunks(new Vector3(0, -1, 0));
-                chunksDetail.MoveChunks(new Vector3(0, -1, 0)*2);
-            }
+                Move(new Vector3(0, 1, 0));
             if (Input.GetKeyUp(KeyCode.S))
-            {
-                chunks.MoveChunks(new Vector3(0, 1, 0));
-                chunksDetail.MoveChunks(new Vector3(0, 1, 0)*2);
-            }
+                Move(new Vector3(0, -1, 0));
 
         }
     }

@@ -1,7 +1,7 @@
 
 
 		#include "include/util.cginc"
-		#include "include/raymarchingDual.cginc"
+		#include "include/raymarching.cginc"
 
 
 
@@ -23,7 +23,7 @@
 			float3 camera = _Camera;
 
 			Ray r;
-			r.Dir = -coord2ray2(i.uv[0].x, i.uv[0].y - 0.0, 1, 1);
+			r.Dir = -coord2ray2(i.uv[0].x, i.uv[0].y - 0.0, 1, 1,1);
 
 			r.Origin = camera;
 
@@ -34,7 +34,7 @@
 
 
 			float planeDir = 0;
-			float4 plane = renderPlane(r, float4(0.3, 0.6, 1.0, 0.7)*0.2, box, planeDir);
+			float4 plane = renderPlane(r, float4(0.3, 0.6, 1.0, 0.7)*0.06, box, planeDir);
 			float4 val = float4(0,0,0,0);
 			if (IntersectBox(r, box, t0, t1)) {
 				float3 opos = float3(0,0,0);

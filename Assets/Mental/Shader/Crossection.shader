@@ -16,6 +16,7 @@ Shader "LemonSpawn/Crossection"
 
 
 
+
 #define S 32
 
 #define TOTAL_STEPS S
@@ -43,7 +44,7 @@ Shader "LemonSpawn/Crossection"
 		half4 frag(v2f i) : COLOR{
 
 			Ray r;
-			r.Dir = -coord2ray2(1-i.uv[0].x, i.uv[0].y - 0.0, 1, 1);
+			r.Dir = -coord2ray2(1-i.uv[0].x, i.uv[0].y - 0.0, 1, 1,1);
 
 			r.Origin = _Camera;
 

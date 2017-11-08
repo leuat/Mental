@@ -192,7 +192,6 @@ namespace LemonSpawn
                 if (go != null && cr.isDeflated)
                 {
                     GameObject.DestroyImmediate(go);
-                    Debug.Log("Destroying go");
                 }
 
             }
@@ -213,9 +212,9 @@ namespace LemonSpawn
         public Chunk[] chunks;
         private string m_data, m_mu;
 
-        public Chunks(VolumetricTexture vt, Vector3 cs, Vector3 vts, Vector3 localPos, string data, string mu)
+        public Chunks(Vector3 cs, Vector3 vts, Vector3 localPos, string data, string mu)
         {
-            volTex = vt;
+            volTex = new VolumetricTexture();
             chunkSize = cs;
             volTexSize = vts;
             gridSize.x = volTexSize.x / chunkSize.x;
@@ -410,7 +409,6 @@ namespace LemonSpawn
             if (changed)
             {
                 volTex.Apply();
-                Debug.Log("Apply");
                 return true;
             }
 
@@ -418,7 +416,6 @@ namespace LemonSpawn
             {
                 movingStatus = StatusType.Idle;
                 volTex.Apply();
-                Debug.Log("Apply Move");
                 return true;
 
             }

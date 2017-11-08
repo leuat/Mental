@@ -152,9 +152,8 @@ float noise(float3 x)
 
 	}
 
-	float3 coord2ray2(float x, float y, float width, float height) {
+	float3 coord2ray2(float x, float y, float width, float height, float aspect_ratio) {
 
-		float aspect_ratio = 1;
 		float FOV = _Perspective / 360.0f * 2 * 3.14159; // convert to radians
 		float dx = tan(FOV*0.5f)*(x / (width / 2) - 1.0f) / aspect_ratio;
 		float dy = tan(FOV*0.5f)*(1 - y / (width / 2));
